@@ -1425,6 +1425,63 @@ f1 = 2 * precision * rappel / (precision + rappel)
 print(round(precision, 3), round(rappel, 3), round(f1, 3))
 ```
 
+### Prétraitement avancé : ColumnTransformer et pipelines · Un DPE ordonné
+
+```python
+import pandas as pd
+from immo import charger
+from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import make_pipeline
+from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
+
+df = charger()
+df = df[df["prix"] / df["surface"] < 20000]          # retire les erreurs de saisie
+X, y = df.drop(columns="prix"), df["prix"]
+NUM = ["surface", "pieces", "etage", "ascenseur", "annee_construction", "distance_metro_m", "balcon"]
+CAT = ["quartier", "dpe"]
+pre = ColumnTransformer([
+    ("num", make_pipeline(SimpleImputer(strategy="median"), StandardScaler()), NUM),
+    ("cat", OneHotEncoder(handle_unknown="ignore"), CAT),
+])
+from sklearn.preprocessing import OrdinalEncoder
+
+pre_ord = ColumnTransformer([
+    ("num", make_pipeline(SimpleImputer(strategy="median"), StandardScaler()), NUM),
+    ("dpe", OrdinalEncoder(categories=[list("ABCDEFG")]), ["dpe"]),
+    ("quartier", OneHotEncoder(handle_unknown="ignore"), ["quartier"]),
+])
+Xt = pre_ord.fit_transform(X)
+print(Xt.shape)
+```
+
+### Prétraitement avancé : ColumnTransformer et pipelines · Une pipeline sans fuite
+
+```python
+import pandas as pd
+from immo import charger
+from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import make_pipeline
+from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
+
+df = charger()
+df = df[df["prix"] / df["surface"] < 20000]          # retire les erreurs de saisie
+X, y = df.drop(columns="prix"), df["prix"]
+NUM = ["surface", "pieces", "etage", "ascenseur", "annee_construction", "distance_metro_m", "balcon"]
+CAT = ["quartier", "dpe"]
+pre = ColumnTransformer([
+    ("num", make_pipeline(SimpleImputer(strategy="median"), StandardScaler()), NUM),
+    ("cat", OneHotEncoder(handle_unknown="ignore"), CAT),
+])
+from sklearn.linear_model import LinearRegression
+from sklearn.model_selection import cross_val_score
+
+modele = make_pipeline(pre, LinearRegression())
+mae_cv = -cross_val_score(modele, X, y, cv=5, scoring="neg_mean_absolute_error").mean()
+print(round(mae_cv))
+```
+
 ### Régression avec scikit-learn · Prédire le pourboire
 
 ```python
@@ -1464,6 +1521,244 @@ for d in range(1, 11):
     scores_cv[d] = cross_val_score(arbre, X, y, cv=5).mean()
 meilleure_profondeur = max(scores_cv, key=scores_cv.get)
 print({d: round(s, 3) for d, s in scores_cv.items()}, meilleure_profondeur)
+```
+
+### Régularisation : Ridge, Lasso et recherche par grille · Lasso trouve les bonnes variables
+
+```python
+import numpy as np
+from sklearn.linear_model import Lasso
+
+rng = np.random.default_rng(42)
+X = rng.normal(size=(200, 10))
+y = 4 * X[:, 0] + 2.5 * X[:, 3] - 3 * X[:, 7] + rng.normal(0, 1, 200)
+
+lasso = Lasso(alpha=0.2).fit(X, y)
+gardees = [i for i, c in enumerate(lasso.coef_) if c != 0]
+print(lasso.coef_.round(2), gardees)
+```
+
+### Régularisation : Ridge, Lasso et recherche par grille · Grid search sur une pipeline
+
+```python
+import pandas as pd
+from immo import charger
+from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import make_pipeline
+from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
+
+df = charger()
+df = df[df["prix"] / df["surface"] < 20000]          # retire les erreurs de saisie
+X, y = df.drop(columns="prix"), df["prix"]
+NUM = ["surface", "pieces", "etage", "ascenseur", "annee_construction", "distance_metro_m", "balcon"]
+CAT = ["quartier", "dpe"]
+pre = ColumnTransformer([
+    ("num", make_pipeline(SimpleImputer(strategy="median"), StandardScaler()), NUM),
+    ("cat", OneHotEncoder(handle_unknown="ignore"), CAT),
+])
+from sklearn.linear_model import Ridge
+from sklearn.model_selection import GridSearchCV
+
+grille = GridSearchCV(make_pipeline(pre, Ridge()), {"ridge__alpha": [0.1, 1, 10, 100, 1000]},
+                      cv=5, scoring="neg_mean_absolute_error").fit(X, y)
+meilleur_alpha = grille.best_params_["ridge__alpha"]
+mae_meilleur = -grille.best_score_
+print(meilleur_alpha, round(mae_meilleur))
+```
+
+### Arbres de décision et forêts aléatoires · L'indice de Gini
+
+```python
+from collections import Counter
+
+def gini(etiquettes):
+    n = len(etiquettes)
+    if n == 0:
+        return 0.0
+    return 1 - sum((c / n) ** 2 for c in Counter(etiquettes).values())
+
+print(gini(["a", "a", "b", "b"]), gini(["a"] * 5))
+```
+
+### Arbres de décision et forêts aléatoires · Trouver la meilleure coupe
+
+```python
+from collections import Counter
+
+def gini(etiquettes):
+    n = len(etiquettes)
+    return 0.0 if n == 0 else 1 - sum((c / n) ** 2 for c in Counter(etiquettes).values())
+
+def meilleur_seuil(x, y):
+    n, meilleur = len(x), None
+    for s in sorted(set(x))[:-1]:
+        g = [c for v, c in zip(x, y) if v <= s]
+        d = [c for v, c in zip(x, y) if v > s]
+        imp = (len(g) * gini(g) + len(d) * gini(d)) / n
+        if meilleur is None or imp < meilleur[1]:
+            meilleur = (s, imp)
+    return meilleur
+
+x = [1, 2, 3, 4, 5, 6]
+y = ["a", "a", "a", "b", "b", "a"]
+print(meilleur_seuil(x, y))
+```
+
+### Arbres de décision et forêts aléatoires · Ce qui fait le prix
+
+```python
+import pandas as pd
+from immo import charger
+from sklearn.ensemble import RandomForestRegressor
+
+df = charger(); df = df[df.prix / df.surface < 20000]
+X = pd.get_dummies(df.drop(columns="prix"), columns=["quartier", "dpe"]).fillna(-1)
+y = df["prix"]
+
+foret = RandomForestRegressor(n_estimators=100, random_state=0).fit(X, y)
+importances = pd.Series(foret.feature_importances_, index=X.columns).sort_values(ascending=False)
+importances.head(8).round(3)
+```
+
+### Boosting, XGBoost et méthodes d'ensemble · Ton propre gradient boosting
+
+```python
+import numpy as np
+from sklearn.tree import DecisionTreeRegressor
+
+rng = np.random.default_rng(3)
+x = np.sort(rng.uniform(0, 6, 150)).reshape(-1, 1)
+y = np.sin(x[:, 0]) * 3 + rng.normal(0, 0.4, 150)
+
+def boosting(x, y, n_arbres, eta, profondeur=1):
+    pred = np.full(len(y), y.mean())
+    mses = []
+    for _ in range(n_arbres):
+        arbre = DecisionTreeRegressor(max_depth=profondeur).fit(x, y - pred)
+        pred = pred + eta * arbre.predict(x)
+        mses.append(((y - pred) ** 2).mean())
+    return pred, mses
+
+pred, mses = boosting(x, y, 200, 0.1)
+print(round(mses[0], 3), round(mses[-1], 3))
+```
+
+### Boosting, XGBoost et méthodes d'ensemble · Forêt contre boosting
+
+```python
+import pandas as pd
+from immo import charger
+from sklearn.ensemble import RandomForestRegressor, HistGradientBoostingRegressor
+from sklearn.model_selection import cross_val_score
+
+df = charger(); df = df[df.prix / df.surface < 20000]
+X_num = pd.get_dummies(df.drop(columns="prix"), columns=["quartier", "dpe"]).fillna(-1)
+y = df["prix"]
+
+modeles = {"foret": RandomForestRegressor(n_estimators=100, random_state=0),
+           "boosting": HistGradientBoostingRegressor(random_state=0)}
+maes = {nom: -cross_val_score(m, X_num, y, cv=3, scoring="neg_mean_absolute_error").mean() for nom, m in modeles.items()}
+meilleur = min(maes, key=maes.get)
+print({k: round(v) for k, v in maes.items()}, meilleur)
+```
+
+### Séries chronologiques et prévision · Les deux baselines
+
+```python
+import numpy as np
+import pandas as pd
+rng = np.random.default_rng(0)
+jours = pd.date_range("2024-01-01", "2025-12-31", freq="D")
+t = np.arange(len(jours))
+velos = pd.Series((200 + 0.15 * t) * np.where(jours.dayofweek >= 5, 1.35, 1.0)
+                  * (1 + 0.45 * np.sin(2 * np.pi * (jours.dayofyear - 110) / 365))
+                  + rng.normal(0, 18, len(t)), index=jours).round()
+
+test = velos["2025-11-01":]
+mae_naif = (test - velos.shift(1)[test.index]).abs().mean()
+mae_saisonnier = (test - velos.shift(7)[test.index]).abs().mean()
+print(round(mae_naif, 1), round(mae_saisonnier, 1))
+```
+
+### Séries chronologiques et prévision · Battre la baseline
+
+```python
+import numpy as np
+import pandas as pd
+from sklearn.linear_model import LinearRegression
+rng = np.random.default_rng(0)
+jours = pd.date_range("2024-01-01", "2025-12-31", freq="D")
+t = np.arange(len(jours))
+velos = pd.Series((200 + 0.15 * t) * np.where(jours.dayofweek >= 5, 1.35, 1.0)
+                  * (1 + 0.45 * np.sin(2 * np.pi * (jours.dayofyear - 110) / 365))
+                  + rng.normal(0, 18, len(t)), index=jours).round()
+
+d = pd.DataFrame({"y": velos})
+for k in [1, 7, 14, 21, 28]:
+    d[f"lag_{k}"] = d["y"].shift(k)
+d = d.join(pd.get_dummies(d.index.dayofweek, prefix="jour").set_index(d.index).astype(int)).dropna()
+train, test = d[:"2025-10-31"], d["2025-11-01":]
+modele = LinearRegression().fit(train.drop(columns="y"), train["y"])
+mae_modele = (test["y"] - modele.predict(test.drop(columns="y"))).abs().mean()
+print(round(mae_modele, 1))
+```
+
+### K-means et clustering · Affecter les points
+
+```python
+import numpy as np
+
+def affecter(X, centres):
+    d = ((X[:, None, :] - centres[None, :, :]) ** 2).sum(axis=2)
+    return d.argmin(axis=1)
+
+X = np.array([[0, 0], [10, 10], [1, 0], [9, 11]])
+print(affecter(X, np.array([[0, 0], [10, 10]])))
+```
+
+### K-means et clustering · K-means de zéro
+
+```python
+import numpy as np
+
+def affecter(X, centres):
+    return ((X[:, None, :] - centres[None, :, :]) ** 2).sum(axis=2).argmin(axis=1)
+
+def kmeans(X, k, n_iter=50, graine=0):
+    rng = np.random.default_rng(graine)
+    centres = X[rng.choice(len(X), k, replace=False)].astype(float)
+    for _ in range(n_iter):
+        labels = affecter(X, centres)
+        nouveaux = np.array([X[labels == j].mean(axis=0) if (labels == j).any() else centres[j] for j in range(k)])
+        if np.allclose(nouveaux, centres):
+            break
+        centres = nouveaux
+    labels = affecter(X, centres)
+    inertie = ((X - centres[labels]) ** 2).sum()
+    return labels, centres, inertie
+
+rng = np.random.default_rng(2)
+X = np.vstack([rng.normal(c, 0.6, size=(50, 2)) for c in [(0, 0), (4, 1), (2, 4)]])
+labels, centres, inertie = kmeans(X, 3)
+print(centres.round(2), round(inertie, 1))
+```
+
+### K-means et clustering · Segmenter les manchots
+
+```python
+import pandas as pd
+from sklearn.cluster import KMeans
+from sklearn.preprocessing import StandardScaler
+
+p = pd.read_csv("penguins.csv").dropna()
+cols = ["bill_length_mm", "bill_depth_mm", "flipper_length_mm", "body_mass_g"]
+
+Xp = StandardScaler().fit_transform(p[cols])
+km = KMeans(n_clusters=3, n_init=10, random_state=0).fit(Xp)
+tableau = pd.crosstab(km.labels_, p["species"])
+purete = tableau.max(axis=1).sum() / len(p)
+print(tableau, round(purete, 3))
 ```
 
 ### Projet final · Classifier les espèces de manchots · Préparer les données
@@ -1526,6 +1821,76 @@ nouveau = pd.DataFrame([{
 espece = modele.predict(nouveau)[0]
 confiance = modele.predict_proba(nouveau).max()
 print(f"{espece} ({confiance:.1%})")
+```
+
+### Projet · Estimer le prix d'un appartement · Nettoyer et séparer
+
+```python
+import pandas as pd
+from immo import charger
+from sklearn.model_selection import train_test_split
+
+df = charger()
+df = df[df["prix"] / df["surface"] <= 20000]
+X, y = df.drop(columns="prix"), df["prix"]
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+print(X_train.shape, X_test.shape)
+```
+
+### Projet · Estimer le prix d'un appartement · Comparer et choisir
+
+```python
+import pandas as pd
+from immo import charger
+from sklearn.model_selection import train_test_split, cross_val_score
+from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import make_pipeline
+from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.linear_model import Ridge
+from sklearn.ensemble import RandomForestRegressor, HistGradientBoostingRegressor
+
+df = charger(); df = df[df.prix / df.surface <= 20000]
+X, y = df.drop(columns="prix"), df["prix"]
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+NUM = ["surface", "pieces", "etage", "ascenseur", "annee_construction", "distance_metro_m", "balcon"]
+pre = ColumnTransformer([("num", make_pipeline(SimpleImputer(strategy="median"), StandardScaler()), NUM),
+                         ("cat", OneHotEncoder(handle_unknown="ignore", sparse_output=False), ["quartier", "dpe"])])
+
+modeles = {"ridge": Ridge(alpha=10), "foret": RandomForestRegressor(n_estimators=100, random_state=0),
+           "boosting": HistGradientBoostingRegressor(random_state=0)}
+scores = {nom: -cross_val_score(make_pipeline(pre, m), X_train, y_train, cv=5, scoring="neg_mean_absolute_error").mean()
+          for nom, m in modeles.items()}
+scores["baseline"] = (y_train - y_train.mean()).abs().mean()
+retenu = min((k for k in scores if k != "baseline"), key=scores.get)
+print({k: round(v) for k, v in scores.items()}, retenu)
+```
+
+### Projet · Estimer le prix d'un appartement · L'évaluation finale
+
+```python
+import numpy as np
+import pandas as pd
+from immo import charger
+from sklearn.model_selection import train_test_split
+from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import make_pipeline
+from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.ensemble import HistGradientBoostingRegressor
+
+df = charger(); df = df[df.prix / df.surface <= 20000]
+X, y = df.drop(columns="prix"), df["prix"]
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+NUM = ["surface", "pieces", "etage", "ascenseur", "annee_construction", "distance_metro_m", "balcon"]
+pre = ColumnTransformer([("num", make_pipeline(SimpleImputer(strategy="median"), StandardScaler()), NUM),
+                         ("cat", OneHotEncoder(handle_unknown="ignore", sparse_output=False), ["quartier", "dpe"])])
+
+modele = make_pipeline(pre, HistGradientBoostingRegressor(random_state=0)).fit(X_train, y_train)
+pred = modele.predict(X_test)
+mae_test = np.abs(y_test - pred).mean()
+erreur_mediane_pct = (np.abs(y_test - pred) / y_test * 100).median()
+print(f"MAE : {mae_test:,.0f} €  ·  erreur médiane : {erreur_mediane_pct:.1f} %")
 ```
 
 ## FullStack IA · Fondation pour l'apprentissage profond

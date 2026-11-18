@@ -4,9 +4,9 @@ J'ai créé une plateforme d'apprentissage pour me préparer à la formation Ful
 
 Elle suit les modules officiels des programmes **Essentials AI**, **FullStack IA** et **Lead AI** de Jedha, avec un plan de 11 semaines à 20 h et plus.
 
-- **43 leçons** avec du code exécutable dans le navigateur et **16 animations interactives**
-- **98 exercices** corrigés automatiquement (Python, pandas, SQL, ML, LLM, agents, RAG)
-- **6 projets** pour le portfolio et **9 quiz**, dont un de préparation à l'AWS Cloud Practitioner
+- **49 leçons** avec du code exécutable dans le navigateur et **21 animations interactives**
+- **115 exercices** corrigés automatiquement (Python, pandas, SQL, machine learning, LLM, agents, RAG)
+- **7 projets** pour le portfolio et **10 quiz**, dont un de préparation à l'AWS Cloud Practitioner
 - de vrais appels à un LLM depuis Python, et un tuteur IA dans chaque leçon
 - la carte complète des 3 programmes : ce qui est préparé, ce qui arrive
 
@@ -48,7 +48,7 @@ Le workflow `.github/workflows/pages.yml` construit, teste et publie la platefor
 | --- | --- |
 | `content/parcours.py` | La carte des programmes Jedha et le plan de 11 semaines |
 | `content/*.py` | Les leçons, exercices (code de départ, corrigé, vérification, indice), projets et quiz |
-| `labs/` | Base SQLite Brewly, fausse API de livres, base de connaissances CloudSync, accès au LLM |
+| `labs/` | Base SQLite Brewly, fausse API de livres, base de connaissances CloudSync, ventes immobilières Immo, accès au LLM |
 | `runner.py`, `pxshim.py` | Exécution des cellules et version simplifiée de plotly.express |
 | `web/src/` | L'application et ses animations, assemblées en `web/index.html` |
 | `build.py` | Transforme le contenu en `dist/content.json` (markdown, formules LaTeX, animations) |

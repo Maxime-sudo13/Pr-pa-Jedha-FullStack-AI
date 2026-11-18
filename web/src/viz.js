@@ -183,9 +183,9 @@ VIZ.normal = el => {
     }
     let d = ""; for (let x = X0; x <= X1; x += .5) d += `${d ? "L" : "M"}${sx(x)} ${sy(pdf(x))} `;
     svg.append(svgEl("path", { d, fill: "none", class: "vz-sink", "stroke-width": 2.2 }));
-    svg.append(svgEl("text", { x: sx(m), y: sy(pdf(m) * .45), "text-anchor": "middle", class: "vz-tb" }, "68 %"), svgEl("text", { x: sx(m + 1.5 * s), y: sy(pdf(m + 1.5 * s) * .3), "text-anchor": "middle", class: "vz-tm" }, "95 %"));
+    svg.append(svgEl("text", { x: sx(m), y: sy(pdf(m) * .45), "text-anchor": "middle", class: "vz-tb" }, "68 %"), svgEl("text", { x: sx(m + 1.5 * s), y: sy(pdf(m + 1.5 * s) * .3), "text-anchor": "middle", class: "vz-tm" }, "95 %"));
     const within = sample.length ? Math.round(100 * sample.filter(v => Math.abs(v - m) < s).length / sample.length) : null;
-    note.innerHTML = `Zone foncée : μ ± σ = [${m - s} ; ${m + s}], environ <b>68 %</b> des valeurs. Zone claire : μ ± 2σ, environ <b>95 %</b>.` + (within != null ? ` Dans ton tirage : <b>${within} %</b> des valeurs sont à moins d'un écart-type.` : "");
+    note.innerHTML = `Zone foncée : μ ± σ = [${m - s} ; ${m + s}], environ <b>68 %</b> des valeurs. Zone claire : μ ± 2σ, environ <b>95 %</b>.` + (within != null ? ` Dans ton tirage : <b>${within} %</b> des valeurs sont à moins d'un écart-type.` : "");
   };
   mu.addEventListener("input", () => { sample = []; draw(); }); sg.addEventListener("input", () => { sample = []; draw(); });
   drawBtn.addEventListener("click", () => { const m = +mu.value, s = +sg.value; sample = Array.from({ length: 500 }, () => m + s * randn()); draw(); });
@@ -262,7 +262,7 @@ VIZ.split = el => {
   body.innerHTML = `<svg viewBox="0 0 600 120" role="img" aria-label="Répartition des exemples entre entraînement et test"></svg>`;
   const svg = $("svg", body);
   const n = 40; let seed = 3;
-  const cls = Array.from({ length: n }, (_, i) => i < 28 ? 0 : 1);       // 70 % / 30 %
+  const cls = Array.from({ length: n }, (_, i) => i < 28 ? 0 : 1);       // 70 % / 30 %
   const ts = rangeCtl(ctrl, `ts${++vizUid}`, "test_size", 0.1, 0.5, 0.05, 0.2, v => v.toFixed(2));
   const strat = h(`<label><input type="checkbox" checked id="st${vizUid}"> stratify=y</label>`); ctrl.appendChild(strat);
   const shuf = btnCtl(ctrl, "Changer random_state");
@@ -283,7 +283,7 @@ VIZ.split = el => {
     }
     svg.append(svgEl("text", { x: 20, y: 108, class: "vz-tm" }, "● classe 0   ■ classe 1   bleu = entraînement   jaune = test"));
     const t1 = [...test].filter(i => cls[i]).length;
-    note.innerHTML = `<b>${n - k}</b> exemples d'entraînement, <b>${k}</b> de test. Classe 1 dans le test : <b>${k ? Math.round(100 * t1 / k) : 0} %</b> (30 % dans les données). ${st ? "Avec <code>stratify</code>, la proportion est respectée." : "Sans <code>stratify</code>, le hasard peut déséquilibrer le jeu de test : relance plusieurs fois."}`;
+    note.innerHTML = `<b>${n - k}</b> exemples d'entraînement, <b>${k}</b> de test. Classe 1 dans le test : <b>${k ? Math.round(100 * t1 / k) : 0} %</b> (30 % dans les données). ${st ? "Avec <code>stratify</code>, la proportion est respectée." : "Sans <code>stratify</code>, le hasard peut déséquilibrer le jeu de test : relance plusieurs fois."}`;
   };
   ts.addEventListener("input", draw); $("input", strat).addEventListener("change", draw); shuf.addEventListener("click", () => { rnd(); draw(); });
   draw();
@@ -367,7 +367,7 @@ VIZ.nexttoken = el => {
   const draw = () => {
     const p = probs();
     body.innerHTML = `<p style="font:15px var(--mono);margin:0 0 12px">${esc(ctx)} <span class="mark">▁▁▁</span></p>` +
-      cand.map((c, i) => `<div style="display:grid;grid-template-columns:90px 1fr 56px;gap:8px;align-items:center;margin:4px 0;font:13px var(--mono)"><span>${c[0]}</span><div class="bar" style="height:14px"><i style="width:${(p[i] * 100).toFixed(1)}%;transition:width .2s"></i></div><span class="tab" style="text-align:right">${(p[i] * 100).toFixed(1)} %</span></div>`).join("") +
+      cand.map((c, i) => `<div style="display:grid;grid-template-columns:90px 1fr 56px;gap:8px;align-items:center;margin:4px 0;font:13px var(--mono)"><span>${c[0]}</span><div class="bar" style="height:14px"><i style="width:${(p[i] * 100).toFixed(1)}%;transition:width .2s"></i></div><span class="tab" style="text-align:right">${(p[i] * 100).toFixed(1)} %</span></div>`).join("") +
       (tires.length ? `<p class="vcap" style="margin-top:12px">Tirages</p><p style="font:13px var(--mono);margin:0">${tires.map(t => `<span class="badge${t === "Paris" ? "" : " jedha"}">${esc(t)}</span>`).join(" ")}</p>` : "");
     const t = +T.value;
     note.innerHTML = t < 0.4 ? "Température basse : « Paris » écrase tout, la réponse est quasi déterministe." : t > 1.6 ? "Température haute : la distribution s'aplatit, des tokens improbables apparaissent souvent." : "Température moyenne : le token le plus probable domine, mais d'autres sortent parfois.";
@@ -409,9 +409,9 @@ VIZ.agent = el => {
   const steps = [
     ["user", "Utilisateur", "Quel temps fait-il à Lyon, et faut-il un parapluie demain ?"],
     ["llm", "LLM", "Je dois connaître la météo. → appel d'outil : meteo(ville=\"Lyon\")"],
-    ["tool", "Outil · meteo", "{ \"aujourd_hui\": \"15 °C, soleil\", \"demain\": \"pluie 80 %\" }"],
+    ["tool", "Outil · meteo", "{ \"aujourd_hui\": \"15 °C, soleil\", \"demain\": \"pluie 80 %\" }"],
     ["llm", "LLM", "J'ai l'information, pas besoin d'autre outil. → réponse finale"],
-    ["final", "Réponse", "Il fait 15 °C et beau à Lyon. Demain, 80 % de risque de pluie : prends un parapluie."],
+    ["final", "Réponse", "Il fait 15 °C et beau à Lyon. Demain, 80 % de risque de pluie : prends un parapluie."],
   ];
   const nodes = [["user", 70, "Utilisateur"], ["llm", 300, "LLM"], ["tool", 530, "Outils"]];
   let k = 0;
@@ -464,4 +464,142 @@ VIZ.chunk = el => {
     note.innerHTML = `<b>${chunks.length} morceaux</b>. Chaque morceau commence ${pas} mots après le précédent ; les ${o} derniers mots de l'un sont repris au début du suivant, pour ne pas couper une information en deux. Trop petit : on perd le contexte. Trop grand : la recherche devient imprécise.`;
   };
   size.addEventListener("input", draw); ov.addEventListener("input", draw); draw();
+};
+
+/* ---------- outils numériques partagés ---------- */
+function mulberry(seed) { return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function gauss(r) { let u = 0, v = 0; while (!u) u = r(); while (!v) v = r(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
+function solve(A, b) { const n = b.length, M = A.map((row, i) => [...row, b[i]]); for (let i = 0; i < n; i++) { let p = i; for (let k = i + 1; k < n; k++) if (Math.abs(M[k][i]) > Math.abs(M[p][i])) p = k; [M[i], M[p]] = [M[p], M[i]]; for (let k = 0; k < n; k++) if (k !== i) { const f = M[k][i] / M[i][i]; for (let j = i; j <= n; j++) M[k][j] -= f * M[i][j]; } } return M.map((r, i) => r[n] / r[i]); }
+
+/* ---------- Ridge contre Lasso ---------- */
+VIZ.regpath = el => {
+  const { body, ctrl, note } = vizShell(el, "Ridge contre Lasso : l'effet de α", "régularisation");
+  const r = mulberry(11), n = 80, p = 8, vrai = [3, -2, 1.2, 0, 0, 0, 0, 0];
+  const X = Array.from({ length: n }, () => Array.from({ length: p }, () => gauss(r)));
+  X.forEach(x => { x[3] = x[0] * 0.7 + gauss(r) * 0.5; });                 // une variable inutile mais corrélée
+  const y = X.map(x => x.reduce((a, v, j) => a + v * vrai[j], 0) + gauss(r) * 1.2);
+  const XtX = Array.from({ length: p }, (_, i) => Array.from({ length: p }, (_, j) => X.reduce((a, x) => a + x[i] * x[j], 0)));
+  const Xty = Array.from({ length: p }, (_, i) => X.reduce((a, x, k) => a + x[i] * y[k], 0));
+  const ridge = a => solve(XtX.map((row, i) => row.map((v, j) => v + (i === j ? a : 0))), Xty);
+  const lasso = a => { const w = Array(p).fill(0); for (let it = 0; it < 200; it++) for (let j = 0; j < p; j++) { let rho = 0; for (let k = 0; k < n; k++) { let pred = 0; for (let m = 0; m < p; m++) if (m !== j) pred += X[k][m] * w[m]; rho += X[k][j] * (y[k] - pred); } const z = XtX[j][j], t = a * n / 10; w[j] = rho > t ? (rho - t) / z : rho < -t ? (rho + t) / z : 0; } return w; };
+  let mode = "Ridge";
+  const la = rangeCtl(ctrl, `ra${++vizUid}`, "log₁₀ α", -2, 3, 0.1, 0, v => `α = ${(10 ** v).toPrecision(2)}`);
+  ["Ridge", "Lasso"].forEach(m => btnCtl(ctrl, m).addEventListener("click", () => { mode = m; draw(); }));
+  const draw = () => {
+    const a = 10 ** +la.value, w = mode === "Ridge" ? ridge(a) : lasso(a);
+    const W = 560, H = 200, mid = 110, sc = 28;
+    let svg = `<svg viewBox="0 0 600 256"><line x1="30" x2="590" y1="${mid}" y2="${mid}" class="vz-line"/>`;
+    w.forEach((v, j) => { const x = 50 + j * 68, hgt = Math.max(-95, Math.min(95, v * sc)); svg += `<rect x="${x}" width="26" y="${hgt > 0 ? mid - hgt : mid}" height="${Math.abs(hgt) || 1}" class="${Math.abs(v) < 1e-6 ? "vz-muted" : "vz-accent"}" rx="3"/><rect x="${x + 28}" width="8" y="${vrai[j] > 0 ? mid - vrai[j] * sc : mid}" height="${Math.abs(vrai[j] * sc) || 1}" class="vz-mark"/><text x="${x + 16}" y="228" text-anchor="middle" class="vz-tm">x${j}</text><text x="${x + 13}" y="${hgt >= 0 ? mid - hgt - 6 : mid - hgt + 14}" text-anchor="middle" class="vz-tm">${v.toFixed(2)}</text>`; });
+    body.innerHTML = svg + `<text x="40" y="252" class="vz-tm">barres bleues : coefficients estimés · jaunes : vrais coefficients</text></svg>`;
+    $$("button", ctrl).forEach(b => b.classList.toggle("primary", b.textContent === mode));
+    const zeros = w.filter(v => Math.abs(v) < 1e-6).length;
+    note.innerHTML = mode === "Ridge" ? `Ridge rétrécit <b>tous</b> les coefficients à mesure que α grandit, sans jamais les annuler. Seules x0, x1 et x2 comptent vraiment.` : `Lasso met <b>${zeros}</b> coefficient${zeros > 1 ? "s" : ""} à zéro : il sélectionne les variables. Trop fort, il finit par annuler aussi les variables utiles.`;
+  };
+  la.addEventListener("input", draw); draw();
+};
+
+/* ---------- arbre de décision en 2D ---------- */
+VIZ.tree = el => {
+  const { body, ctrl, note } = vizShell(el, "Un arbre découpe l'espace", "arbres");
+  const r = mulberry(5), pts = [];
+  for (let i = 0; i < 160; i++) { const a = r() * Math.PI, c = i % 2; const x = c ? 1 - Math.cos(a) : Math.cos(a), y = c ? 0.5 - Math.sin(a) : Math.sin(a); pts.push([x + gauss(r) * 0.18, y + gauss(r) * 0.18, c]); }
+  const gini = s => { if (!s.length) return 0; const p = s.filter(q => q[2]).length / s.length; return 1 - p * p - (1 - p) * (1 - p); };
+  function build(s, d, box) {
+    const maj = s.filter(q => q[2]).length * 2 >= s.length ? 1 : 0;
+    if (d === 0 || gini(s) === 0 || s.length < 4) return { leaf: true, c: maj, box, n: s.length };
+    let best = null;
+    for (const f of [0, 1]) { const vals = [...new Set(s.map(q => q[f]))].sort((a, b) => a - b); for (let i = 0; i < vals.length - 1; i += 2) { const t = (vals[i] + vals[i + 1]) / 2, L = s.filter(q => q[f] <= t), R = s.filter(q => q[f] > t), g = (L.length * gini(L) + R.length * gini(R)) / s.length; if (!best || g < best.g) best = { f, t, g, L, R }; } }
+    if (!best) return { leaf: true, c: maj, box, n: s.length };
+    const bl = box.slice(), br = box.slice(); if (best.f === 0) { bl[2] = best.t; br[0] = best.t; } else { bl[3] = best.t; br[1] = best.t; }
+    return { f: best.f, t: best.t, l: build(best.L, d - 1, bl), r: build(best.R, d - 1, br) };
+  }
+  const predict = (nd, q) => nd.leaf ? nd.c : predict(q[nd.f] <= nd.t ? nd.l : nd.r, q);
+  const leaves = nd => nd.leaf ? [nd] : [...leaves(nd.l), ...leaves(nd.r)];
+  const depth = rangeCtl(ctrl, `td${++vizUid}`, "Profondeur max", 1, 10, 1, 2);
+  const draw = () => {
+    const tree = build(pts, +depth.value, [-1.6, -1.1, 2.6, 1.6]);
+    const X = x => 20 + (x + 1.6) / 4.2 * 560, Y = y => 240 - (y + 1.1) / 2.7 * 230;
+    let svg = `<svg viewBox="0 0 600 250">`;
+    leaves(tree).forEach(lf => { const [x0, y0, x1, y1] = lf.box; svg += `<rect x="${X(x0)}" y="${Y(y1)}" width="${X(x1) - X(x0)}" height="${Y(y0) - Y(y1)}" class="${lf.c ? "vz-mark" : "vz-accent"}" fill-opacity=".16" stroke="var(--line)"/>`; });
+    pts.forEach(q => { svg += q[2] ? `<rect x="${X(q[0]) - 4}" y="${Y(q[1]) - 4}" width="8" height="8" class="vz-mark" stroke="var(--ink)" stroke-width=".8"/>` : `<circle cx="${X(q[0])}" cy="${Y(q[1])}" r="4" class="vz-accent"/>`; });
+    body.innerHTML = svg + "</svg>";
+    const acc = pts.filter(q => predict(tree, q) === q[2]).length / pts.length, nl = leaves(tree).length;
+    note.innerHTML = `<b>${nl} feuilles</b> · exactitude sur ces points : <b>${(acc * 100).toFixed(0)}${" "}%</b>. ` + (+depth.value <= 2 ? "Peu profond : des frontières grossières, l'arbre sous-apprend." : +depth.value >= 7 ? "Très profond : l'arbre isole des points de bruit dans de minuscules rectangles. Il surapprend." : "Les coupes sont toujours parallèles aux axes : l'arbre approche la frontière courbe par des marches d'escalier.");
+  };
+  depth.addEventListener("input", draw); draw();
+};
+
+/* ---------- boosting pas à pas ---------- */
+VIZ.boost = el => {
+  const { body, ctrl, note } = vizShell(el, "Le boosting corrige ses erreurs", "boosting");
+  const r = mulberry(3), N = 70, xs = Array.from({ length: N }, (_, i) => i / (N - 1) * 6).map(x => x + (r() - .5) * .05), ys = xs.map(x => Math.sin(x) * 3 + gauss(r) * 0.45);
+  const mean = ys.reduce((a, b) => a + b, 0) / N;
+  const stump = res => { let best = null; for (let i = 1; i < N; i++) { const t = (xs[i - 1] + xs[i]) / 2, L = res.slice(0, i), R = res.slice(i), ml = L.reduce((a, b) => a + b, 0) / L.length, mr = R.reduce((a, b) => a + b, 0) / R.length, e = L.reduce((a, v) => a + (v - ml) ** 2, 0) + R.reduce((a, v) => a + (v - mr) ** 2, 0); if (!best || e < best.e) best = { t, ml, mr, e }; } return x => x <= best.t ? best.ml : best.mr; };
+  const it = rangeCtl(ctrl, `bi${++vizUid}`, "Nombre d'arbres", 0, 150, 1, 0);
+  const eta = rangeCtl(ctrl, `be${vizUid}`, "Taux η", 0.05, 1, 0.05, 0.2, v => v.toFixed(2));
+  let cache = {};
+  const run = (m, e) => { const key = e; if (!cache[key]) { const preds = [ys.map(() => mean)]; let p = preds[0].slice(); for (let k = 0; k < 150; k++) { const h = stump(ys.map((v, i) => v - p[i])); p = p.map((v, i) => v + e * h(xs[i])); preds.push(p.slice()); } cache[key] = preds; } return cache[key][m]; };
+  const draw = () => {
+    const m = +it.value, e = +eta.value, p = run(m, e);
+    const X = x => 20 + x / 6 * 560, Y = y => 120 - y * 30;
+    let svg = `<svg viewBox="0 0 600 240"><line x1="20" x2="580" y1="120" y2="120" class="vz-line"/>`;
+    xs.forEach((x, i) => { svg += `<line x1="${X(x)}" x2="${X(x)}" y1="${Y(ys[i])}" y2="${Y(p[i])}" class="vz-serr" stroke-opacity=".45"/><circle cx="${X(x)}" cy="${Y(ys[i])}" r="3.5" class="vz-accent"/>`; });
+    svg += `<path d="${xs.map((x, i) => `${i ? "L" : "M"}${X(x)} ${Y(p[i])}`).join(" ")}" fill="none" class="vz-sink" stroke-width="2.2"/></svg>`;
+    body.innerHTML = svg;
+    const mse = ys.reduce((a, v, i) => a + (v - p[i]) ** 2, 0) / N;
+    note.innerHTML = `Après <b>${m}</b> arbre${m > 1 ? "s" : ""} : MSE = <b>${mse.toFixed(3)}</b>. Les traits rouges sont les <b>résidus</b> : chaque nouvel arbre (une simple « marche ») apprend à les réduire. ` + (m === 0 ? "Au départ, on prédit la moyenne." : e > 0.6 ? "Avec un grand η, chaque arbre corrige brutalement : on risque de surapprendre." : "");
+  };
+  it.addEventListener("input", draw); eta.addEventListener("input", draw); draw();
+};
+
+/* ---------- séries temporelles ---------- */
+VIZ.ts = el => {
+  const { body, ctrl, note } = vizShell(el, "Tendance, saisonnalité et moyenne mobile", "séries temporelles");
+  const r = mulberry(9), N = 365, ys = Array.from({ length: N }, (_, t) => { const d = new Date(2025, 0, 1 + t), we = d.getDay() === 0 || d.getDay() === 6; return (200 + 0.15 * t) * (we ? 1.35 : 1) * (1 + 0.45 * Math.sin(2 * Math.PI * (t - 110) / 365)) + gauss(r) * 18; });
+  const win = rangeCtl(ctrl, `tw${++vizUid}`, "Fenêtre (jours)", 1, 60, 1, 7);
+  const show = h(`<label><input type="checkbox" id="tf${vizUid}"> Prévision saisonnière naïve (30 derniers jours)</label>`); ctrl.appendChild(show);
+  const draw = () => {
+    const w = +win.value, lo = Math.min(...ys), hi = Math.max(...ys);
+    const X = t => 20 + t / (N - 1) * 560, Y = v => 220 - (v - lo) / (hi - lo) * 200;
+    const roll = ys.map((_, i) => { if (i < w - 1) return null; let s = 0; for (let k = i - w + 1; k <= i; k++) s += ys[k]; return s / w; });
+    let svg = `<svg viewBox="0 0 600 240"><path d="${ys.map((v, i) => `${i ? "L" : "M"}${X(i)} ${Y(v)}`).join(" ")}" fill="none" class="vz-smuted" stroke-opacity=".45" stroke-width="1"/>`;
+    svg += `<path d="${roll.map((v, i) => v == null ? "" : `${roll[i - 1] == null ? "M" : "L"}${X(i)} ${Y(v)}`).join(" ")}" fill="none" class="vz-sacc" stroke-width="2.4"/>`;
+    let extra = "";
+    if ($("input", show).checked) { const s = N - 30; svg += `<rect x="${X(s)}" y="10" width="${X(N - 1) - X(s)}" height="215" class="vz-mark" fill-opacity=".12"/><path d="${ys.slice(s).map((_, j) => `${j ? "L" : "M"}${X(s + j)} ${Y(ys[s + j - 7])}`).join(" ")}" fill="none" class="vz-serr" stroke-width="1.8" stroke-dasharray="4 3"/>`; const mae = ys.slice(s).reduce((a, v, j) => a + Math.abs(v - ys[s + j - 7]), 0) / 30; extra = ` Prévision saisonnière (pointillés rouges) : MAE = <b>${mae.toFixed(1)}</b>.`; }
+    ["janv.", "avr.", "juil.", "oct."].forEach((m, i) => { svg += `<text x="${X(i * 91)}" y="238" class="vz-tm">${m}</text>`; });
+    body.innerHTML = svg + "</svg>";
+    note.innerHTML = (w === 1 ? "Fenêtre de 1 jour : la série brute, avec ses pics du week-end." : w === 7 ? "Fenêtre de <b>7 jours</b> : l'effet week-end disparaît exactement, il reste la tendance et la saison." : w > 30 ? "Fenêtre large : on ne voit plus que la tendance de fond et le cycle annuel." : `Moyenne mobile sur ${w} jours.`) + extra;
+  };
+  win.addEventListener("input", draw); $("input", show).addEventListener("change", draw); draw();
+};
+
+/* ---------- K-means pas à pas ---------- */
+VIZ.kmeans = el => {
+  const { body, ctrl, note } = vizShell(el, "K-means, étape par étape", "clustering");
+  const r = mulberry(21);
+  const pts = []; [[-1.2, -0.6], [1.3, -0.4], [0.1, 1.2]].forEach(([cx, cy]) => { for (let i = 0; i < 45; i++) pts.push([cx + gauss(r) * 0.45, cy + gauss(r) * 0.45]); });
+  let K = 3, centres, labels, phase, iter;
+  const init = () => { const rr = mulberry(Math.floor(Math.random() * 1e6)); centres = Array.from({ length: K }, () => pts[Math.floor(rr() * pts.length)].slice()); labels = pts.map(() => -1); phase = "affecter"; iter = 0; draw(); };
+  const COLS = ["vz-accent", "vz-mark", "vz-ok", "vz-err", "vz-muted"];
+  const inertie = () => labels[0] < 0 ? null : pts.reduce((a, p, i) => a + (p[0] - centres[labels[i]][0]) ** 2 + (p[1] - centres[labels[i]][1]) ** 2, 0);
+  const step = () => {
+    if (phase === "affecter") { labels = pts.map(p => { let b = 0, bd = Infinity; centres.forEach((c, j) => { const d = (p[0] - c[0]) ** 2 + (p[1] - c[1]) ** 2; if (d < bd) { bd = d; b = j; } }); return b; }); phase = "deplacer"; }
+    else { centres = centres.map((c, j) => { const g = pts.filter((_, i) => labels[i] === j); return g.length ? [g.reduce((a, p) => a + p[0], 0) / g.length, g.reduce((a, p) => a + p[1], 0) / g.length] : c; }); phase = "affecter"; iter++; }
+    draw();
+  };
+  const draw = () => {
+    const X = x => 300 + x * 105, Y = y => 118 - y * 62;
+    let svg = `<svg viewBox="0 0 600 250">`;
+    pts.forEach((p, i) => { svg += `<circle cx="${X(p[0])}" cy="${Y(p[1])}" r="4" class="${labels[i] < 0 ? "vz-muted" : COLS[labels[i]]}" fill-opacity="${labels[i] < 0 ? .5 : .85}"/>`; });
+    centres.forEach((c, j) => { svg += `<g transform="translate(${X(c[0])},${Y(c[1])})"><circle r="11" class="${COLS[j]}" stroke="var(--ink)" stroke-width="2.5"/><path d="M-5 0 H5 M0 -5 V5" class="vz-sink" stroke-width="2"/></g>`; });
+    body.innerHTML = svg + "</svg>";
+    const I = inertie();
+    note.innerHTML = `Itération <b>${iter}</b>${I != null ? ` · inertie = <b>${I.toFixed(1)}</b>` : ""}. ` + (phase === "affecter" ? "Prochaine étape : <b>affecter</b> chaque point au centre le plus proche." : "Prochaine étape : <b>déplacer</b> chaque centre à la moyenne de ses points.") + " Relance avec un autre départ : le résultat peut changer, d'où <code>n_init=10</code>.";
+    $$(".kbtn", ctrl).forEach(b => b.textContent = phase === "affecter" ? "Affecter les points" : "Déplacer les centres");
+  };
+  const b = btnCtl(ctrl, "Affecter les points", "btn small primary kbtn"); b.addEventListener("click", step);
+  btnCtl(ctrl, "Nouveau départ").addEventListener("click", init);
+  const ks = h(`<label for="kk${++vizUid}">k <select id="kk${vizUid}" class="btn small">${[2, 3, 4, 5].map(k => `<option ${k === 3 ? "selected" : ""}>${k}</option>`).join("")}</select></label>`); ctrl.appendChild(ks);
+  $("select", ks).addEventListener("change", e => { K = +e.target.value; init(); });
+  init();
 };

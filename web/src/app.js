@@ -150,7 +150,7 @@ function updateGlobal() {
   if (!C) return;
   const g = globalStats();
   $("#gmeter").style.width = g + "%";
-  $("#gpct").textContent = g + " %";
+  $("#gpct").textContent = g + " %";
 }
 function maybeAutoDone(it) {
   if (!it.exercises || !it.exercises.length) return;
@@ -182,8 +182,12 @@ function ensurePython(onStatus) {
 }
 async function runPython(code, key, check, fresh, onStatus) {
   await ensurePython(onStatus);
-  const scan = (code + "\n" + (check || "")).replace(/^\s*(import plotly.*|from plotly.*|import fakeapi.*|from brewly.*|import brewly.*|import llm.*|from llm.*|import cloudsync.*|from cloudsync.*)$/gm, "");
-  const needs = /\bbrewly\b/.test(code + (check || "")) ? "import sqlite3\n" : "";
+  const all = code + "\n" + (check || "");
+  const LOCAL = /^\s*(?:import|from)\s+(plotly|fakeapi|brewly|llm|cloudsync|immo|pxshim)\b.*$/gm;
+  const scan = all.replace(LOCAL, "");
+  let needs = "";
+  if (/\bbrewly\b/.test(all)) needs += "import sqlite3\n";
+  if (/\bimmo\b/.test(all)) needs += "import numpy\nimport pandas\n";
   try { onStatus && onStatus("Chargement des bibliothèques nécessaires…"); await py.loadPackagesFromImports(needs + scan); } catch (e) {}
   if (needs) { try { await py.loadPackage("sqlite3"); } catch (e) {} }
   onStatus && onStatus("Exécution…");
@@ -526,7 +530,7 @@ function viewHome() {
       <div class="card resume">
         <div><div class="eyebrow">Progression globale</div><div class="big tab">${g}<small> %</small></div></div>
         <div><div class="epochs" style="grid-template-columns:repeat(${C.tracks.length},1fr)">${C.tracks.map(t => `<div><i style="width:${trackStats(t).p}%"></i></div>`).join("")}</div>
-        <div class="epochs-l" style="grid-template-columns:repeat(${C.tracks.length},1fr)">${C.tracks.map(t => `<span>${esc(t.nom)} · ${trackStats(t).p} %</span>`).join("")}</div></div>
+        <div class="epochs-l" style="grid-template-columns:repeat(${C.tracks.length},1fr)">${C.tracks.map(t => `<span title="${esc(t.nom)}">${esc(t.nom.split(" ")[0])} ${trackStats(t).p} %</span>`).join("")}</div></div>
         ${nx ? `<a class="continue" href="#${nx}"><span class="eyebrow">${g === 0 ? "Commencer" : "Reprendre"} · ${esc(MOD[HOME[nx]].M.titre)}</span><b>${esc(label(nx))}</b><span class="muted" style="font-size:13px">${esc(kindLabel(nx))} · ${esc(meta(nx))} →</span></a>`
               : `<div class="continue"><b>Tout le contenu publié est terminé. Bravo !</b><span class="muted">La prochaine vague arrive.</span></div>`}
       </div>
@@ -534,7 +538,7 @@ function viewHome() {
     <section class="stats">
       <div class="card stat"><b class="tab">${nLessons}/${allLessons.length}</b><span>leçons et projets terminés</span></div>
       <div class="card stat"><b class="tab">${nEx}/${totEx}</b><span>exercices réussis</span></div>
-      <div class="card stat"><b class="tab">${nQuiz}/${qs.length}</b><span>quiz réussis (75 % ou plus)</span></div>
+      <div class="card stat"><b class="tab">${nQuiz}/${qs.length}</b><span>quiz réussis (75 % ou plus)</span></div>
       <div class="card stat"><b class="tab">${S.days.length}</b><span>jours de pratique · série de ${streak()}</span></div>
     </section>
     <div class="section-h"><h2>Ton plan de ${C.plan.length} semaines</h2><p>20 h et plus par semaine : Essentials d'abord, puis le FullStack</p></div>
@@ -556,8 +560,8 @@ function viewHome() {
     const w = C.plan.find(x => x.semaine === n);
     const ids = weekIds(w);
     const s = statsOf(ids);
-    $(".wkdetail", el).innerHTML = `<div class="eyebrow">Semaine ${w.semaine} · ${esc(w.heures)} · ${s.p} % fait</div><h3>${esc(w.titre)}</h3>
-      <ul>${w.modules.map(mid => { const { M, T } = MOD[mid]; const cv = coverage(M); return `<li><a href="#m-${mid}">${esc(M.titre)}</a> <span class="muted" style="font-size:13px">· ${esc(T.nom)} · ${cv.p} % du module préparé ici</span></li>`; }).join("")}</ul>
+    $(".wkdetail", el).innerHTML = `<div class="eyebrow">Semaine ${w.semaine} · ${esc(w.heures)} · ${s.p} % fait</div><h3>${esc(w.titre)}</h3>
+      <ul>${w.modules.map(mid => { const { M, T } = MOD[mid]; const cv = coverage(M); return `<li><a href="#m-${mid}">${esc(M.titre)}</a> <span class="muted" style="font-size:13px">· ${esc(T.nom)} · ${cv.p} % du module préparé ici</span></li>`; }).join("")}</ul>
       <div class="lesson-tools"><button class="btn small" type="button" data-cur="${n}">${S.week === n ? "✓ Ma semaine en cours" : "Définir comme ma semaine en cours"}</button></div>`;
     $$(".wk", el).forEach(b => b.classList.toggle("cur", +b.dataset.w === n));
     $("[data-cur]", el).addEventListener("click", () => { S.week = S.week === n ? null : n; save(); showWeek(n); });
@@ -586,7 +590,7 @@ function viewModule(mid) {
   const el = h(`<div class="read">
     <div class="pagehead"><div class="crumbs"><a href="#accueil">Accueil</a><span>/</span><span>${esc(T.nom)}</span></div>
       <h1>${esc(M.titre)}</h1><p>${esc(M.objectif)}</p>
-      <div class="lesson-tools"><span class="badge jedha">${M.jours ? `${M.jours} jour${M.jours > 1 ? "s" : ""} chez Jedha` : "Avant la formation"}</span><span class="badge">Semaine ${M.semaine} du plan</span><span class="badge ok">${cv.c}/${cv.n} sections préparées ici</span>${s.total ? `<span class="badge">${s.p} % fait</span>` : ""}</div>
+      <div class="lesson-tools"><span class="badge jedha">${M.jours ? `${M.jours} jour${M.jours > 1 ? "s" : ""} chez Jedha` : "Avant la formation"}</span><span class="badge">Semaine ${M.semaine} du plan</span><span class="badge ok">${cv.c}/${cv.n} sections préparées ici</span>${s.total ? `<span class="badge">${s.p} % fait</span>` : ""}</div>
     </div>
     <h2 class="section-t" style="margin-top:8px">Le programme, section par section</h2>
     <p class="muted" style="margin:0 0 6px">Chaque bloc correspond à une section du programme Jedha. En dessous, les leçons qui t'y préparent.</p>

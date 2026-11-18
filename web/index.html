@@ -1,0 +1,1615 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prépa FullStack AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+
+/* Plan : cahier de labo d'apprenti AI Engineer. Papier quadrillé froid, encre bleu Python,
+   surligneur jaune Python pour l'unique accent. Les blocs de code reprennent les cellules
+   « In [n] / Out [n] » d'un notebook. Mise en page en colonne de lecture, tableau de bord en grille. */
+:root {
+  --paper: #eef1f6;
+  --surface: #ffffff;
+  --ink: #111a2e;
+  --muted: #5a6478;
+  --line: #d6dce7;
+  --accent: #2856c4;
+  --mark: #ffd43b;
+  --ok: #17845a;
+  --err: #c2410c;
+  --code-bg: #f6f8fb;
+  --grid: rgba(40, 86, 196, 0.06);
+  --shadow: 0 1px 2px rgba(17, 26, 46, .06), 0 4px 16px rgba(17, 26, 46, .05);
+  --display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --body: "IBM Plex Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --k-kw: #7c3aed; --k-str: #0f7a4f; --k-num: #b45309; --k-com: #7a8396; --k-fn: #2856c4; --k-bi: #0e7490;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0d1220; --surface: #141b2d; --ink: #e7ebf3; --muted: #9aa4b8; --line: #263049;
+    --accent: #86a8ff; --mark: #e9c84a; --ok: #4cc38a; --err: #ff8f62; --code-bg: #0f1526;
+    --grid: rgba(134, 168, 255, 0.05); --shadow: 0 1px 2px rgba(0,0,0,.4), 0 4px 18px rgba(0,0,0,.25);
+    --k-kw: #c4a5ff; --k-str: #7fd8a8; --k-num: #ffb86b; --k-com: #7b859b; --k-fn: #86a8ff; --k-bi: #67d3e6;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0d1220; --surface: #141b2d; --ink: #e7ebf3; --muted: #9aa4b8; --line: #263049;
+  --accent: #86a8ff; --mark: #e9c84a; --ok: #4cc38a; --err: #ff8f62; --code-bg: #0f1526;
+  --grid: rgba(134, 168, 255, 0.05); --shadow: 0 1px 2px rgba(0,0,0,.4), 0 4px 18px rgba(0,0,0,.25);
+  --k-kw: #c4a5ff; --k-str: #7fd8a8; --k-num: #ffb86b; --k-com: #7b859b; --k-fn: #86a8ff; --k-bi: #67d3e6;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background-color: var(--paper);
+  background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 24px 24px;
+  color: var(--ink);
+  font: 400 16px/1.6 var(--body);
+  -webkit-font-smoothing: antialiased;
+}
+a { color: var(--accent); }
+button, input, textarea, select { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+h1, h2, h3 { font-family: var(--display); line-height: 1.15; text-wrap: balance; letter-spacing: -0.01em; }
+.tab { font-variant-numeric: tabular-nums; }
+.mark { background: linear-gradient(transparent 58%, var(--mark) 58%, var(--mark) 92%, transparent 92%); padding: 0 .08em; }
+.muted { color: var(--muted); }
+[hidden] { display: none !important; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+
+/* ---------- barre du haut ---------- */
+.top {
+  position: sticky; top: 0; z-index: 20;
+  background: color-mix(in srgb, var(--paper) 88%, transparent);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--line);
+}
+.top-in { max-width: 1080px; margin: 0 auto; padding: 10px 16px; display: flex; align-items: center; gap: 12px; }
+.brand { font-family: var(--display); font-weight: 800; font-size: 17px; text-decoration: none; color: var(--ink); white-space: nowrap; }
+.brand small { font-family: var(--mono); font-weight: 500; font-size: 11px; color: var(--muted); margin-left: 6px; letter-spacing: .04em; }
+.top .spacer { flex: 1; }
+.pill { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+.meter { width: 90px; height: 6px; border-radius: 6px; background: var(--line); overflow: hidden; }
+.meter > i { display: block; height: 100%; background: var(--accent); border-radius: 6px; transition: width .4s ease; }
+.back { text-decoration: none; font-size: 14px; color: var(--muted); display: inline-flex; gap: 6px; align-items: center; }
+
+main { max-width: 1080px; margin: 0 auto; padding: 24px 16px 80px; }
+.read { max-width: 760px; margin: 0 auto; }
+
+/* ---------- accueil ---------- */
+.hero { display: grid; grid-template-columns: 1.4fr 1fr; gap: 20px; align-items: stretch; margin-bottom: 28px; }
+.hero h1 { font-size: clamp(32px, 5.6vw, 56px); font-weight: 800; margin: 6px 0 12px; }
+.eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.lede { font-size: 18px; color: var(--muted); max-width: 52ch; margin: 0 0 18px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); }
+.resume { padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+.resume .big { font-family: var(--display); font-weight: 800; font-size: 54px; line-height: 1; }
+.resume .big small { font-size: 22px; color: var(--muted); font-weight: 700; }
+.epochs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.epochs div { height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; }
+.epochs i { display: block; height: 100%; background: var(--accent); }
+.epochs-l { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; font-family: var(--mono); font-size: 11px; color: var(--muted); }
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+  border-radius: 10px; padding: 9px 14px; font-weight: 600; font-size: 14px; cursor: pointer;
+  text-decoration: none; transition: border-color .15s, background .15s, transform .05s;
+}
+.btn:hover { border-color: var(--accent); }
+.btn:active { transform: translateY(1px); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+.btn.primary:hover { filter: brightness(1.08); }
+.btn.ghost { background: transparent; }
+.btn.small { padding: 6px 10px; font-size: 13px; border-radius: 8px; }
+.btn[disabled] { opacity: .55; cursor: progress; }
+.continue { display: flex; flex-direction: column; gap: 4px; padding: 14px 16px; border-radius: 12px; background: var(--code-bg); border: 1px dashed var(--line); text-decoration: none; color: var(--ink); }
+.continue:hover { border-color: var(--accent); }
+.continue b { font-family: var(--display); font-size: 18px; }
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 28px; }
+.stat { padding: 14px 16px; }
+.stat b { display: block; font-family: var(--display); font-size: 28px; font-weight: 800; line-height: 1.1; }
+.stat span { font-size: 13px; color: var(--muted); }
+.jday { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; font-size: 14px; }
+.jday input { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 6px 8px; }
+.jday b { font-family: var(--display); font-size: 18px; }
+
+.weeks { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+.week { padding: 18px 18px 14px; display: flex; flex-direction: column; gap: 10px; }
+.week h3 { margin: 0; font-size: 22px; }
+.week h3 a { color: var(--ink); text-decoration: none; }
+.week h3 a:hover { color: var(--accent); }
+.week .goal { margin: 0; font-size: 14px; color: var(--muted); }
+.bar { height: 6px; border-radius: 6px; background: var(--line); overflow: hidden; }
+.bar > i { display: block; height: 100%; background: var(--accent); }
+.items { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-direction: column; }
+.items li a { display: flex; gap: 10px; align-items: baseline; padding: 6px 4px; border-radius: 8px; text-decoration: none; color: var(--ink); font-size: 14px; }
+.items li a:hover { background: var(--code-bg); }
+.items .meta { margin-left: auto; font-size: 12px; color: var(--muted); white-space: nowrap; font-family: var(--mono); }
+.dot { flex: none; width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--line); transform: translateY(1px); }
+.dot.half { border-color: var(--accent); background: linear-gradient(90deg, var(--accent) 50%, transparent 50%); }
+.dot.done { border-color: var(--ok); background: var(--ok); }
+.extras { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-top: 16px; }
+.extras a.card { padding: 16px 18px; text-decoration: none; color: var(--ink); display: block; }
+.extras a.card:hover { border-color: var(--accent); }
+.extras b { font-family: var(--display); font-size: 18px; display: block; }
+.sync { font-size: 12px; color: var(--muted); text-align: center; margin-top: 28px; }
+
+/* ---------- page semaine ---------- */
+.pagehead { margin: 8px 0 24px; }
+.pagehead h1 { font-size: clamp(30px, 5vw, 44px); margin: 6px 0 10px; }
+.pagehead p { margin: 0; color: var(--muted); font-size: 17px; }
+.list { padding: 6px; }
+.list a { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; padding: 12px; border-radius: 10px; text-decoration: none; color: var(--ink); }
+.list a:hover { background: var(--code-bg); }
+.list .k { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+.list b { font-weight: 600; }
+
+/* ---------- leçon ---------- */
+.crumbs { font-size: 13px; color: var(--muted); display: flex; gap: 6px; flex-wrap: wrap; }
+.crumbs a { color: var(--muted); }
+.lesson-tools { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+.prose { font-size: 17px; }
+.prose h2 { font-size: 26px; margin: 40px 0 12px; }
+.prose h3 { font-size: 20px; margin: 28px 0 8px; }
+.prose p, .prose li { max-width: 68ch; }
+.prose code { font-family: var(--mono); font-size: .88em; background: var(--code-bg); border: 1px solid var(--line); border-radius: 5px; padding: 1px 5px; }
+.prose pre code { border: 0; padding: 0; background: none; }
+.prose ul, .prose ol { padding-left: 1.3em; }
+.prose li { margin: 4px 0; }
+.callout { margin: 24px 0; padding: 14px 18px; border-left: 4px solid var(--mark); background: color-mix(in srgb, var(--mark) 14%, var(--surface)); border-radius: 0 10px 10px 0; }
+.callout p { margin: 0; }
+.math { overflow-x: auto; padding: 10px 0; text-align: center; color: var(--ink); }
+.math svg { max-width: 100%; height: auto; }
+.table-wrap { overflow-x: auto; margin: 16px 0; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+.table-wrap table { border-collapse: collapse; width: 100%; font-size: 15px; }
+.table-wrap th, .table-wrap td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.table-wrap tr:last-child td { border-bottom: 0; }
+.table-wrap th { font-weight: 600; background: var(--code-bg); }
+
+/* cellules façon notebook */
+.cell { margin: 18px 0; display: grid; grid-template-columns: 54px 1fr; gap: 0 8px; }
+.gut { font-family: var(--mono); font-size: 12px; color: var(--accent); text-align: right; padding-top: 11px; white-space: nowrap; }
+.gut.out { color: var(--err); }
+.cellbox { min-width: 0; border: 1px solid var(--line); border-radius: 10px; background: var(--code-bg); overflow: hidden; }
+.cellbox:focus-within { border-color: var(--accent); }
+.ed { position: relative; }
+.ed pre, .ed textarea {
+  margin: 0; padding: 10px 12px; border: 0; font: 400 14px/1.55 var(--mono); tab-size: 4;
+  white-space: pre; overflow-wrap: normal; letter-spacing: 0;
+}
+.ed pre { pointer-events: none; overflow: hidden; min-height: 100%; padding-bottom: 18px; }
+.ed textarea { padding-bottom: 18px; }
+.ed textarea {
+  position: absolute; inset: 0; width: 100%; height: 100%; resize: none; background: transparent;
+  color: transparent; caret-color: var(--ink); overflow-x: auto; overflow-y: hidden; outline: none;
+}
+.ed textarea::selection { background: color-mix(in srgb, var(--accent) 30%, transparent); color: transparent; }
+.static pre { margin: 0; padding: 10px 12px; font: 400 14px/1.55 var(--mono); overflow-x: auto; }
+.cellbar { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; padding: 6px 8px; border-top: 1px solid var(--line); background: var(--surface); }
+.cellbar .grow { flex: 1; }
+.cellbar .lang { font-family: var(--mono); font-size: 11px; color: var(--muted); padding: 0 4px; }
+.run { color: var(--accent); }
+.output { grid-column: 2; min-width: 0; }
+.output:empty { display: none; }
+.out { margin-top: 6px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); overflow: hidden; }
+.out pre { margin: 0; padding: 10px 12px; font: 13px/1.5 var(--mono); white-space: pre-wrap; overflow-wrap: anywhere; max-height: 360px; overflow: auto; }
+.out .res { overflow-x: auto; padding: 4px; }
+.out .note { padding: 6px 12px; font-size: 12px; color: var(--muted); border-top: 1px solid var(--line); }
+.out img { max-width: 100%; display: block; margin: 8px auto; }
+.plot { width: 100%; height: 340px; }
+table.df { border-collapse: collapse; font: 12.5px/1.4 var(--mono); }
+table.df th, table.df td { padding: 4px 10px; border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; }
+table.df thead th { background: var(--code-bg); }
+table.df tbody th { color: var(--muted); font-weight: 500; }
+.err { border-color: color-mix(in srgb, var(--err) 50%, var(--line)); }
+.err .head { padding: 8px 12px; background: color-mix(in srgb, var(--err) 10%, var(--surface)); color: var(--err); font-weight: 600; font-size: 14px; }
+.err .src { font: 13px/1.5 var(--mono); padding: 6px 12px; border-top: 1px solid var(--line); background: var(--code-bg); overflow-x: auto; white-space: pre; }
+.err .hint { padding: 8px 12px; font-size: 14px; border-top: 1px solid var(--line); }
+.loading { font-size: 13px; color: var(--muted); padding: 8px 12px; display: flex; gap: 8px; align-items: center; }
+.spin { width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--line); border-top-color: var(--accent); animation: sp 0.8s linear infinite; }
+@keyframes sp { to { transform: rotate(360deg); } }
+
+
+/* coloration syntaxique */
+.hljs-keyword, .hljs-meta .hljs-keyword { color: var(--k-kw); }
+.hljs-string, .hljs-meta .hljs-string { color: var(--k-str); }
+.hljs-number, .hljs-literal { color: var(--k-num); }
+.hljs-comment { color: var(--k-com); font-style: italic; }
+.hljs-title.function_, .hljs-title.class_, .hljs-title { color: var(--k-fn); }
+.hljs-built_in { color: var(--k-bi); }
+.hljs-params { color: inherit; }
+.hljs-section, .hljs-bullet { color: var(--k-kw); font-weight: 600; }
+
+/* exercices */
+.section-t { font-family: var(--display); font-size: 26px; margin: 48px 0 6px; }
+.exo { margin: 18px 0 26px; padding: 16px 16px 6px; }
+.exo-h { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.exo-h h3 { margin: 0; font-size: 19px; }
+.exo-h .num { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+.status { margin-left: auto; font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
+.status.ok { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 45%, var(--line)); background: color-mix(in srgb, var(--ok) 10%, var(--surface)); }
+.exo .prompt p { margin: 8px 0; }
+.exo .cell { grid-template-columns: 1fr; }
+.exo .gut { display: none; }
+.exo .output { grid-column: 1; }
+.verdict { margin-top: 6px; padding: 10px 12px; border-radius: 10px; font-weight: 600; font-size: 14px; }
+.verdict.ok { background: color-mix(in srgb, var(--ok) 12%, var(--surface)); color: var(--ok); border: 1px solid color-mix(in srgb, var(--ok) 40%, var(--line)); }
+.verdict.no { background: color-mix(in srgb, var(--err) 9%, var(--surface)); color: var(--err); border: 1px solid color-mix(in srgb, var(--err) 35%, var(--line)); }
+.reveal { margin: 8px 0; padding: 10px 12px; border-radius: 10px; background: var(--code-bg); border: 1px dashed var(--line); font-size: 14px; }
+.reveal pre { margin: 6px 0 0; font: 13px/1.5 var(--mono); overflow-x: auto; }
+
+/* tâches */
+.tasks { list-style: none; padding: 6px 4px; margin: 10px 0; }
+.tasks li label { display: flex; gap: 12px; align-items: flex-start; padding: 8px 10px; border-radius: 8px; cursor: pointer; }
+.tasks li label:hover { background: var(--code-bg); }
+.tasks input { width: 18px; height: 18px; margin-top: 3px; accent-color: var(--ok); flex: none; }
+.tasks input:checked + span { color: var(--muted); text-decoration: line-through; text-decoration-color: var(--muted); }
+
+/* tuteur */
+.tutor { margin-top: 40px; padding: 16px; display: none; }
+.has-sample .tutor { display: block; }
+.needs-sample { display: none !important; }
+.has-sample .needs-sample { display: inline-flex !important; }
+.needs-tts { display: none !important; }
+.has-tts .needs-tts { display: inline-flex !important; }
+.tutor h3 { margin: 0 0 4px; font-size: 19px; }
+.thread { display: flex; flex-direction: column; gap: 10px; margin: 12px 0; }
+.msg { padding: 10px 12px; border-radius: 10px; font-size: 15px; }
+.msg.me { align-self: flex-end; background: color-mix(in srgb, var(--accent) 12%, var(--surface)); max-width: 85%; }
+.msg.ai { background: var(--code-bg); border: 1px solid var(--line); }
+.msg p { margin: 6px 0; } .msg p:first-child { margin-top: 0; } .msg p:last-child { margin-bottom: 0; }
+.msg pre { font: 13px/1.5 var(--mono); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; overflow-x: auto; }
+.msg code { font-family: var(--mono); font-size: .9em; }
+.ask { display: flex; gap: 8px; align-items: flex-end; }
+.ask textarea { flex: 1; min-height: 44px; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; background: var(--surface); resize: vertical; }
+.help { margin-top: 6px; }
+
+/* bas de leçon */
+.foot { display: flex; gap: 10px; flex-wrap: wrap; justify-content: space-between; align-items: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--line); }
+.done-btn.on { background: var(--ok); border-color: var(--ok); color: var(--surface); }
+
+/* quiz */
+.q { padding: 16px 18px; margin: 14px 0; }
+.q h3 { font-family: var(--body); font-size: 17px; font-weight: 600; margin: 0 0 10px; line-height: 1.4; }
+.q label { display: flex; gap: 10px; align-items: flex-start; padding: 8px 10px; border-radius: 8px; border: 1px solid transparent; cursor: pointer; }
+.q label:hover { background: var(--code-bg); }
+.q input { margin-top: 5px; accent-color: var(--accent); }
+.q label.right { border-color: color-mix(in srgb, var(--ok) 50%, var(--line)); background: color-mix(in srgb, var(--ok) 10%, var(--surface)); }
+.q label.wrong { border-color: color-mix(in srgb, var(--err) 45%, var(--line)); background: color-mix(in srgb, var(--err) 8%, var(--surface)); }
+.q .exp { margin-top: 8px; font-size: 14px; color: var(--muted); }
+.score { padding: 18px; margin: 18px 0; display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+.score b { font-family: var(--display); font-size: 40px; font-weight: 800; }
+
+.boot { padding: 80px 16px; text-align: center; color: var(--muted); }
+
+@media (max-width: 760px) {
+  .hero { grid-template-columns: 1fr; }
+  .stats { grid-template-columns: repeat(2, 1fr); }
+  .weeks, .extras { grid-template-columns: 1fr; }
+  .cell { grid-template-columns: 1fr; }
+  .gut { display: none; }
+  .output { grid-column: 1; }
+  .prose { font-size: 16px; }
+  .brand small { display: none; }
+  .meter { width: 60px; }
+  .ed pre, .ed textarea { font-size: 16px; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+
+/* ---------- parcours ---------- */
+.tabs { display: flex; gap: 6px; flex-wrap: wrap; margin: 6px 0 16px; }
+.tabs button { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 7px 14px; font-weight: 600; font-size: 14px; cursor: pointer; color: var(--muted); }
+.tabs button[aria-selected="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.tabs .tag { font-size: 11px; font-weight: 500; margin-left: 6px; opacity: .8; }
+.section-h { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin: 36px 0 10px; }
+.section-h h2 { margin: 0; font-size: 26px; }
+.section-h p { margin: 0; color: var(--muted); font-size: 14px; }
+.modules { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.mod { padding: 16px; display: flex; flex-direction: column; gap: 8px; text-decoration: none; color: var(--ink); position: relative; }
+.mod:hover { border-color: var(--accent); }
+.mod .num { font-family: var(--mono); font-size: 12px; color: var(--muted); display: flex; justify-content: space-between; }
+.mod b { font-family: var(--display); font-size: 18px; line-height: 1.2; }
+.mod .obj { font-size: 13px; color: var(--muted); }
+.mod .meters { display: grid; gap: 4px; margin-top: auto; }
+.mod .row { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); font-family: var(--mono); }
+.bar.cov > i { background: repeating-linear-gradient(45deg, var(--mark), var(--mark) 4px, color-mix(in srgb, var(--mark) 60%, transparent) 4px, color-mix(in srgb, var(--mark) 60%, transparent) 8px); }
+.badge { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); background: var(--surface); white-space: nowrap; }
+.badge.ok { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 40%, var(--line)); }
+.badge.soon { color: var(--muted); border-style: dashed; }
+.badge.local { color: var(--k-bi); border-color: color-mix(in srgb, var(--k-bi) 40%, var(--line)); }
+.badge.jedha { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 35%, var(--line)); }
+
+/* plan 10 semaines */
+.plan { display: grid; grid-template-columns: repeat(var(--n, 10), 1fr); gap: 6px; }
+.wk { padding: 10px 8px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); text-decoration: none; color: var(--ink); display: flex; flex-direction: column; gap: 6px; min-width: 0; cursor: pointer; text-align: left; }
+.wk:hover { border-color: var(--accent); }
+.wk.cur { border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 25%, transparent); }
+.wk .n { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+.wk .t { font-size: 12px; font-weight: 600; line-height: 1.25; }
+.wk .bar { height: 4px; margin-top: auto; }
+.wkdetail { margin-top: 10px; padding: 14px 16px; }
+.wkdetail h3 { margin: 0 0 4px; font-size: 20px; }
+.wkdetail ul { margin: 8px 0 0; padding-left: 1.1em; }
+
+/* sections d'un module */
+.sec { padding: 14px 16px; margin: 10px 0; }
+.sec-h { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+.sec-h b { font-size: 16px; margin-right: auto; }
+.sec .items { margin-top: 6px; }
+.sec .soon-txt { font-size: 14px; color: var(--muted); margin: 6px 0 0; }
+
+/* ---------- visualisations interactives ---------- */
+.viz { margin: 22px 0; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); overflow: hidden; box-shadow: var(--shadow); }
+.viz-h { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-bottom: 1px solid var(--line); background: var(--code-bg); }
+.viz-h b { font-family: var(--display); font-size: 15px; }
+.viz-h .eyebrow { margin-left: auto; }
+.viz-b { padding: 14px; }
+.viz-b svg { display: block; width: 100%; height: auto; overflow: visible; }
+.viz-c { display: flex; gap: 8px 14px; flex-wrap: wrap; align-items: center; padding: 10px 14px; border-top: 1px solid var(--line); font-size: 14px; }
+.viz-c label { display: inline-flex; align-items: center; gap: 8px; }
+.viz-c input[type=range] { width: 140px; accent-color: var(--accent); }
+.viz-c output { font-family: var(--mono); font-size: 13px; min-width: 3.5em; }
+.viz-note { font-size: 14px; color: var(--muted); padding: 0 14px 12px; }
+.viz-note b { color: var(--ink); }
+.vz-ink { fill: var(--ink); } .vz-muted { fill: var(--muted); } .vz-accent { fill: var(--accent); } .vz-mark { fill: var(--mark); }
+.vz-ok { fill: var(--ok); } .vz-err { fill: var(--err); } .vz-surface { fill: var(--surface); } .vz-code { fill: var(--code-bg); }
+.vz-line { stroke: var(--line); } .vz-sacc { stroke: var(--accent); } .vz-sink { stroke: var(--ink); } .vz-serr { stroke: var(--err); } .vz-sok { stroke: var(--ok); } .vz-smuted { stroke: var(--muted); }
+.vz-t { font: 12px var(--body); fill: var(--ink); } .vz-tm { font: 11px var(--mono); fill: var(--muted); } .vz-tc { font: 12px var(--mono); fill: var(--ink); }
+.vz-tb { font: 600 13px var(--body); fill: var(--ink); }
+.vtab { width: 100%; border-collapse: collapse; font: 13px var(--mono); }
+.vtab th, .vtab td { padding: 5px 8px; border-bottom: 1px solid var(--line); text-align: left; transition: background .25s, opacity .25s; }
+.vtab th { background: var(--code-bg); font-weight: 600; }
+.vtab tr.hl td { background: color-mix(in srgb, var(--accent) 14%, var(--surface)); }
+.vtab tr.dim td { opacity: .3; }
+.vtab td.null { color: var(--muted); font-style: italic; }
+.vgrid { display: grid; gap: 12px; grid-template-columns: 1fr 1fr; align-items: start; }
+.vgrid > div { min-width: 0; overflow-x: auto; }
+.vcap { font: 600 12px var(--mono); color: var(--muted); margin: 0 0 6px; text-transform: uppercase; letter-spacing: .06em; }
+.gcolor-0 { background: color-mix(in srgb, var(--accent) 16%, var(--surface)) !important; }
+.gcolor-1 { background: color-mix(in srgb, var(--mark) 30%, var(--surface)) !important; }
+.gcolor-2 { background: color-mix(in srgb, var(--ok) 18%, var(--surface)) !important; }
+.objs { display: flex; gap: 10px; flex-wrap: wrap; }
+.objcard { border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; font: 12.5px/1.5 var(--mono); background: var(--code-bg); animation: pop .35s ease; }
+.objcard b { font-family: var(--body); }
+@keyframes pop { from { transform: translateY(-8px) scale(.96); opacity: 0; } to { transform: none; opacity: 1; } }
+.json { font: 12.5px/1.5 var(--mono); background: var(--code-bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; white-space: pre-wrap; margin: 0; min-height: 4em; }
+@media (max-width: 900px) { .modules { grid-template-columns: repeat(2, 1fr); } .plan { grid-template-columns: repeat(4, 1fr); } }
+@media (max-width: 560px) { .modules { grid-template-columns: 1fr; } .vgrid { grid-template-columns: 1fr; } }
+
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top-in">
+    <a class="back" id="back" href="#accueil" hidden>← <span>Accueil</span></a>
+    <a class="brand" id="brand" href="#accueil">Prépa FullStack AI<small>ESSENTIALS · FULLSTACK · LEAD</small></a>
+    <div class="spacer"></div>
+    <div class="pill tab" title="Progression globale"><div class="meter"><i id="gmeter" style="width:0%"></i></div><span id="gpct">0 %</span></div>
+  </div>
+</header>
+<main id="app"><div class="boot">Chargement de ta plateforme…</div></main>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script>
+/* ================================================================ visualisations interactives
+   Chaque visualisation est une fonction (el) => void qui remplit un bloc .viz. */
+const NS = "http://www.w3.org/2000/svg";
+const reduceMotion = () => window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+function svgEl(tag, attrs = {}, text) { const e = document.createElementNS(NS, tag); for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v); if (text != null) e.textContent = text; return e; }
+function vizShell(el, title, kind) {
+  el.innerHTML = `<div class="viz-h"><b>${esc(title)}</b><span class="eyebrow">${esc(kind || "interactif")}</span></div><div class="viz-b"></div><div class="viz-c"></div><div class="viz-note"></div>`;
+  return { body: $(".viz-b", el), ctrl: $(".viz-c", el), note: $(".viz-note", el) };
+}
+function rangeCtl(ctrl, id, lab, min, max, step, val, fmt = v => v) {
+  const w = h(`<label for="${id}">${esc(lab)} <input type="range" id="${id}" min="${min}" max="${max}" step="${step}" value="${val}"><output>${fmt(+val)}</output></label>`);
+  const inp = $("input", w), out = $("output", w);
+  inp.addEventListener("input", () => { out.textContent = fmt(+inp.value); });
+  ctrl.appendChild(w);
+  return inp;
+}
+function btnCtl(ctrl, txt, cls = "btn small") { const b = h(`<button type="button" class="${cls}">${esc(txt)}</button>`); ctrl.appendChild(b); return b; }
+let vizUid = 0;
+const VIZ = {};
+function mountViz(el, name) {
+  const f = VIZ[name];
+  if (!f) { el.remove(); return; }
+  try { f(el); } catch (e) { el.innerHTML = `<div class="viz-note">Cette animation n'a pas pu s'afficher.</div>`; }
+}
+
+/* ---------- POO : une classe, des objets ---------- */
+VIZ.oop = el => {
+  const { body, ctrl, note } = vizShell(el, "Une classe, plusieurs objets", "POO");
+  const presets = [["Stylo", 1.5, 10], ["Cahier", 3.2, 1], ["Sac", 40, 1], ["Clavier", 49.9, 2], ["Lampe", 24, 1]];
+  let k = 0;
+  body.innerHTML = `<div class="vgrid"><div><p class="vcap">La classe (le plan)</p><pre class="json">class Article:
+    tva = 0.20
+
+    def __init__(self, nom, prix_ht, quantite):
+        self.nom = nom
+        self.prix_ht = prix_ht
+        self.quantite = quantite
+
+    def total_ttc(self):
+        return prix_ht × quantite × (1 + tva)</pre></div><div><p class="vcap">Les objets (les exemplaires)</p><div class="objs"></div></div></div>`;
+  const objs = $(".objs", body);
+  const add = () => {
+    if (k >= presets.length) { objs.innerHTML = ""; k = 0; }
+    const [n, p, q] = presets[k++];
+    const v = n.toLowerCase();
+    objs.appendChild(h(`<div class="objcard"><b>${v}</b> = Article("${n}", ${p}, ${q})<br>nom = "${n}"<br>prix_ht = ${p}<br>quantite = ${q}<br>total_ttc() → <b>${(p * q * 1.2).toFixed(2)}</b></div>`));
+    note.innerHTML = `Chaque objet a <b>ses propres valeurs</b> d'attributs, mais tous partagent les mêmes méthodes et l'attribut de classe <code>tva</code>. ${k} objet${k > 1 ? "s" : ""} créé${k > 1 ? "s" : ""}.`;
+  };
+  btnCtl(ctrl, "Créer un objet", "btn small primary").addEventListener("click", add);
+  add(); add();
+};
+
+/* ---------- HTTP : requête et réponse ---------- */
+VIZ.http = el => {
+  const { body, ctrl, note } = vizShell(el, "Le cycle requête → réponse", "HTTP");
+  const REQ = [
+    { m: "GET", p: "/books/3", s: 200, t: "OK", j: { id: 3, titre: "Fondation", annee: 1951, note: { moyenne: 4.4 } } },
+    { m: "GET", p: "/books/999", s: 404, t: "Not Found", j: { erreur: "Livre 999 introuvable" } },
+    { m: "GET", p: "/secure", s: 401, t: "Unauthorized", j: { erreur: "Clé d'API manquante ou invalide" } },
+    { m: "GET", p: "/flaky", s: 503, t: "Service Unavailable", j: { erreur: "Service indisponible" } },
+  ];
+  body.innerHTML = `<svg viewBox="0 0 600 150" role="img" aria-label="Animation d'une requête HTTP entre un client et un serveur"></svg><pre class="json" style="margin-top:10px"></pre>`;
+  const svg = $("svg", body), pre = $("pre", body);
+  const box = (x, label, sub) => { const g = svgEl("g"); g.append(svgEl("rect", { x, y: 35, width: 130, height: 80, rx: 12, class: "vz-code vz-line", "stroke-width": 1.5 }), svgEl("text", { x: x + 65, y: 70, "text-anchor": "middle", class: "vz-tb" }, label), svgEl("text", { x: x + 65, y: 90, "text-anchor": "middle", class: "vz-tm" }, sub)); svg.append(g); };
+  box(10, "Ton code", "requests.get(...)"); box(460, "Serveur", "api.biblio.test");
+  svg.append(svgEl("line", { x1: 140, y1: 60, x2: 460, y2: 60, class: "vz-line", "stroke-width": 2, "stroke-dasharray": "4 4" }), svgEl("line", { x1: 140, y1: 95, x2: 460, y2: 95, class: "vz-line", "stroke-width": 2, "stroke-dasharray": "4 4" }));
+  const pk = svgEl("g"); const pr = svgEl("rect", { x: -60, y: -13, width: 120, height: 26, rx: 13, class: "vz-accent" }); const pt = svgEl("text", { x: 0, y: 5, "text-anchor": "middle", class: "vz-tc", style: "fill:var(--surface);font-weight:600" }, "");
+  pk.append(pr, pt); pk.setAttribute("opacity", 0); svg.append(pk);
+  let anim = 0;
+  const move = (x0, x1, y, ms) => new Promise(res => { const t0 = performance.now(); const my = ++anim; const step = t => { if (my !== anim) return res(); const u = Math.min(1, (t - t0) / ms); const e = u < .5 ? 2 * u * u : 1 - Math.pow(-2 * u + 2, 2) / 2; pk.setAttribute("transform", `translate(${x0 + (x1 - x0) * e},${y})`); u < 1 ? requestAnimationFrame(step) : res(); }; requestAnimationFrame(step); });
+  async function send(r) {
+    pre.textContent = "…";
+    pk.setAttribute("opacity", 1); pr.setAttribute("class", "vz-accent"); pt.textContent = `${r.m} ${r.p}`;
+    const fast = reduceMotion();
+    await move(200, 400, 60, fast ? 1 : 900);
+    pr.setAttribute("class", r.s < 300 ? "vz-ok" : "vz-err"); pt.textContent = `${r.s} ${r.t}`;
+    await move(400, 200, 95, fast ? 1 : 900);
+    pk.setAttribute("opacity", 0);
+    pre.textContent = `HTTP ${r.s} ${r.t}\nContent-Type: application/json\n\n${JSON.stringify(r.j, null, 2)}`;
+    note.innerHTML = r.s < 300 ? "<b>2xx</b> : succès, le corps contient les données demandées." : r.s === 404 ? "<b>404</b> : la ressource n'existe pas. Réessayer ne sert à rien : corrige l'identifiant." : r.s === 401 ? "<b>401</b> : il manque une clé d'API valide dans l'en-tête Authorization." : "<b>503</b> : erreur temporaire du serveur. On attend un peu, puis on réessaie (backoff exponentiel).";
+  }
+  REQ.forEach((r, i) => btnCtl(ctrl, `${r.m} ${r.p}`, i ? "btn small" : "btn small primary").addEventListener("click", () => send(r)));
+  pre.textContent = "Choisis une requête ci-dessous.";
+  note.innerHTML = "Une requête part avec une <b>méthode</b> et un <b>chemin</b>, la réponse revient avec un <b>code de statut</b> et un corps JSON.";
+};
+
+/* ---------- groupby : découper, appliquer, combiner ---------- */
+VIZ.groupby = el => {
+  const { body, ctrl, note } = vizShell(el, "Découper → appliquer → combiner", "GROUP BY");
+  const rows = [["Bastille", 12], ["Part-Dieu", 8], ["Bastille", 5], ["Chartrons", 9], ["Part-Dieu", 14], ["Bastille", 7], ["Chartrons", 3], ["Part-Dieu", 6]];
+  const groups = [...new Set(rows.map(r => r[0]))];
+  const AGG = { sum: ["SUM", a => a.reduce((x, y) => x + y, 0)], mean: ["AVG", a => +(a.reduce((x, y) => x + y, 0) / a.length).toFixed(2)], count: ["COUNT", a => a.length], max: ["MAX", a => Math.max(...a)] };
+  let agg = "sum", step = 0;
+  const draw = () => {
+    const [fname, f] = AGG[agg];
+    const table = (rs, colored) => `<table class="vtab"><tr><th>magasin</th><th>montant</th></tr>${rs.map(r => `<tr class="${colored ? "" : ""}"><td class="${colored ? "gcolor-" + groups.indexOf(r[0]) : ""}">${r[0]}</td><td class="${colored ? "gcolor-" + groups.indexOf(r[0]) : ""}">${r[1]}</td></tr>`).join("")}</table>`;
+    let left = `<p class="vcap">Données</p>${table(rows, step >= 1)}`, right = "";
+    if (step >= 1) right = `<p class="vcap">1 · Découper en groupes</p>${groups.map(g => `<div style="margin-bottom:8px">${table(rows.filter(r => r[0] === g), true)}${step >= 2 ? `<div class="vz-tc" style="font:600 12px var(--mono);padding:4px 8px">${fname}(montant) = ${f(rows.filter(r => r[0] === g).map(r => r[1]))}</div>` : ""}</div>`).join("")}`;
+    if (step >= 3) left = `<p class="vcap">3 · Combiner</p><table class="vtab"><tr><th>magasin</th><th>${fname.toLowerCase()}_montant</th></tr>${groups.map(g => `<tr><td class="gcolor-${groups.indexOf(g)}">${g}</td><td class="gcolor-${groups.indexOf(g)}">${f(rows.filter(r => r[0] === g).map(r => r[1]))}</td></tr>`).join("")}</table><p class="vcap" style="margin-top:14px">Données</p>${table(rows, true)}`;
+    body.innerHTML = `<div class="vgrid"><div>${left}</div><div>${right || '<p class="vcap">Clique sur « Étape suivante »</p>'}</div></div>`;
+    note.innerHTML = [`En pandas : <code>df.groupby("magasin")["montant"].${agg === "count" ? "count" : agg}()</code>. En SQL : <code>SELECT magasin, ${fname}(montant) FROM t GROUP BY magasin</code>.`,
+      "<b>Découper</b> : chaque ligne rejoint le groupe de son magasin.", `<b>Appliquer</b> : la fonction ${fname} est calculée dans chaque groupe, séparément.`, "<b>Combiner</b> : une ligne par groupe dans le résultat."][step];
+  };
+  btnCtl(ctrl, "Étape suivante", "btn small primary").addEventListener("click", () => { step = (step + 1) % 4; draw(); });
+  const sel = h(`<label for="gb-agg-${++vizUid}">Fonction <select id="gb-agg-${vizUid}" class="btn small"><option value="sum">somme</option><option value="mean">moyenne</option><option value="count">comptage</option><option value="max">maximum</option></select></label>`);
+  ctrl.appendChild(sel);
+  $("select", sel).addEventListener("change", e => { agg = e.target.value; draw(); });
+  draw();
+};
+
+/* ---------- jointures SQL ---------- */
+VIZ.join = el => {
+  const { body, ctrl, note } = vizShell(el, "INNER JOIN contre LEFT JOIN", "SQL");
+  const clients = [[1, "Léa"], [2, "Hugo"], [3, "Inès"], [4, "Adam"]];
+  const cmds = [[101, 1, "Bastille"], [102, 3, "Bouffay"], [103, 1, "Chartrons"], [104, 3, "Bastille"], [105, 2, "Part-Dieu"]];
+  let mode = "INNER";
+  const draw = () => {
+    const res = [];
+    for (const [id, p] of clients) {
+      const m = cmds.filter(c => c[1] === id);
+      if (m.length) m.forEach(c => res.push([id, p, c[0], c[2]]));
+      else if (mode === "LEFT") res.push([id, p, null, null]);
+    }
+    const venn = `<svg viewBox="0 0 200 110" style="max-width:220px"><circle cx="80" cy="55" r="44" class="${mode === "LEFT" ? "vz-accent" : "vz-code"}" fill-opacity="${mode === "LEFT" ? .35 : 1}" stroke="var(--line)"/><circle cx="125" cy="55" r="44" class="vz-code" fill-opacity=".6" stroke="var(--line)"/><path d="M102.5 17 A44 44 0 0 1 102.5 93 A44 44 0 0 1 102.5 17" class="vz-accent" fill-opacity=".7"/><text x="62" y="58" class="vz-tm" text-anchor="middle">clients</text><text x="146" y="58" class="vz-tm" text-anchor="middle">commandes</text></svg>`;
+    body.innerHTML = `<div class="vgrid"><div><p class="vcap">clients</p><table class="vtab"><tr><th>id</th><th>prenom</th></tr>${clients.map(([i, p]) => `<tr class="${cmds.some(c => c[1] === i) ? "" : (mode === "INNER" ? "dim" : "hl")}"><td>${i}</td><td>${p}</td></tr>`).join("")}</table><p class="vcap" style="margin-top:12px">commandes</p><table class="vtab"><tr><th>id</th><th>client_id</th><th>magasin</th></tr>${cmds.map(c => `<tr><td>${c[0]}</td><td>${c[1]}</td><td>${c[2]}</td></tr>`).join("")}</table></div>
+      <div>${venn}<p class="vcap">Résultat · ${res.length} lignes</p><table class="vtab"><tr><th>id</th><th>prenom</th><th>cmd</th><th>magasin</th></tr>${res.map(r => `<tr class="${r[2] === null ? "hl" : ""}">${r.map(v => v === null ? `<td class="null">NULL</td>` : `<td>${v}</td>`).join("")}</tr>`).join("")}</table></div></div>`;
+    note.innerHTML = mode === "INNER" ? "<b>INNER JOIN</b> ne garde que les lignes qui ont une correspondance des deux côtés : Adam, qui n'a jamais commandé, disparaît." : "<b>LEFT JOIN</b> garde tous les clients. Adam apparaît avec des <b>NULL</b> : c'est ainsi qu'on trouve « ceux qui n'ont jamais commandé » (<code>WHERE c.id IS NULL</code>).";
+    $$("button", ctrl).forEach(b => b.classList.toggle("primary", b.textContent.startsWith(mode)));
+  };
+  ["INNER JOIN", "LEFT JOIN"].forEach(t => btnCtl(ctrl, t).addEventListener("click", () => { mode = t.split(" ")[0]; draw(); }));
+  draw();
+};
+
+/* ---------- ETL ---------- */
+VIZ.etl = el => {
+  const { body, ctrl, note } = vizShell(el, "Un pipeline ETL", "données");
+  const st = [["Extract", "API /books", "23 livres JSON"], ["Transform", "pandas", "aplatir, renommer, typer"], ["Load", "SQLite / RDS", "table livres"]];
+  body.innerHTML = `<svg viewBox="0 0 600 140" role="img" aria-label="Pipeline extraire, transformer, charger"></svg>`;
+  const svg = $("svg", body);
+  st.forEach(([t, s, d], i) => { const x = 20 + i * 200; svg.append(svgEl("rect", { x, y: 30, width: 160, height: 80, rx: 12, class: "vz-code vz-line", "stroke-width": 1.5, id: `etl${i}-${vizUid}` }), svgEl("text", { x: x + 80, y: 60, "text-anchor": "middle", class: "vz-tb" }, t), svgEl("text", { x: x + 80, y: 78, "text-anchor": "middle", class: "vz-tm" }, s), svgEl("text", { x: x + 80, y: 96, "text-anchor": "middle", class: "vz-tm" }, d)); if (i < 2) svg.append(svgEl("path", { d: `M${x + 165} 70 L${x + 195} 70`, class: "vz-smuted", "stroke-width": 2, "marker-end": "" }), svgEl("text", { x: x + 180, y: 64, "text-anchor": "middle", class: "vz-tm" }, "→")); });
+  const dots = [];
+  for (let i = 0; i < 12; i++) { const c = svgEl("circle", { r: 4, cx: 20, cy: 70, class: "vz-accent", opacity: 0 }); svg.append(c); dots.push(c); }
+  const id = vizUid++;
+  btnCtl(ctrl, "Lancer le pipeline", "btn small primary").addEventListener("click", () => {
+    const t0 = performance.now();
+    const run = t => {
+      const el2 = (t - t0) / 1000;
+      dots.forEach((d, i) => { const u = Math.max(0, Math.min(1, (el2 - i * 0.15) / 2.2)); d.setAttribute("opacity", u > 0 && u < 1 ? 1 : 0); d.setAttribute("cx", 100 + u * 400); d.setAttribute("cy", 70 + Math.sin(u * 12 + i) * 18 * (1 - u)); d.setAttribute("class", u > .5 ? "vz-ok" : "vz-accent"); });
+      const stage = Math.min(2, Math.floor(el2 / 1.1));
+      note.innerHTML = ["<b>Extraire</b> : on pagine l'API et on récupère le JSON brut.", "<b>Transformer</b> : on aplatit, on renomme les colonnes, on valide les types et les valeurs.", "<b>Charger</b> : on écrit la table dans la base, en remplaçant l'ancienne version (idempotence)."][stage];
+      if (el2 < 4.2 && !reduceMotion()) requestAnimationFrame(run); else { dots.forEach(d => d.setAttribute("opacity", 0)); note.innerHTML = "Terminé : <b>23 lignes</b> chargées. Relancer le pipeline donne le même résultat, sans doublons."; }
+    };
+    requestAnimationFrame(run);
+  });
+  note.innerHTML = "Chaque étape est une fonction. Un orchestrateur comme <b>Airflow</b> en fera des tâches planifiées et surveillées.";
+};
+
+/* ---------- loi normale ---------- */
+VIZ.normal = el => {
+  const { body, ctrl, note } = vizShell(el, "La loi normale", "distribution");
+  body.innerHTML = `<svg viewBox="0 0 600 240" role="img" aria-label="Courbe de la loi normale avec un histogramme d'échantillons"></svg>`;
+  const svg = $("svg", body);
+  const mu = rangeCtl(ctrl, `mu${++vizUid}`, "Moyenne μ", 140, 200, 1, 170);
+  const sg = rangeCtl(ctrl, `sg${vizUid}`, "Écart-type σ", 3, 20, 1, 10);
+  const drawBtn = btnCtl(ctrl, "Tirer 500 valeurs", "btn small primary");
+  let sample = [];
+  const X0 = 110, X1 = 230, W = 560, H = 190, L = 20, T = 20;
+  const sx = x => L + (x - X0) / (X1 - X0) * W;
+  const randn = () => { let u = 0, v = 0; while (!u) u = Math.random(); while (!v) v = Math.random(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); };
+  const draw = () => {
+    const m = +mu.value, s = +sg.value;
+    svg.innerHTML = "";
+    const pdf = x => Math.exp(-((x - m) ** 2) / (2 * s * s)) / (s * Math.sqrt(2 * Math.PI));
+    const ymax = pdf(m) * 1.15;
+    const sy = y => T + H - y / ymax * H;
+    svg.append(svgEl("line", { x1: L, x2: L + W, y1: T + H, y2: T + H, class: "vz-line" }));
+    for (let x = 110; x <= 230; x += 20) svg.append(svgEl("text", { x: sx(x), y: T + H + 16, "text-anchor": "middle", class: "vz-tm" }, x));
+    [[2, .18], [1, .3]].forEach(([k, op]) => { let d = `M${sx(m - k * s)} ${sy(0)}`; for (let x = m - k * s; x <= m + k * s; x += .5) d += ` L${sx(x)} ${sy(pdf(x))}`; d += ` L${sx(m + k * s)} ${sy(0)} Z`; svg.append(svgEl("path", { d, class: "vz-accent", "fill-opacity": op })); });
+    if (sample.length) {
+      const bw = 3, bins = {};
+      sample.forEach(v => { const b = Math.floor(v / bw); bins[b] = (bins[b] || 0) + 1; });
+      for (const [b, c] of Object.entries(bins)) { const x = +b * bw; if (x < X0 || x > X1) continue; const dens = c / sample.length / bw; svg.append(svgEl("rect", { x: sx(x), y: sy(dens), width: Math.max(1, sx(x + bw) - sx(x) - 1), height: sy(0) - sy(dens), class: "vz-mark", "fill-opacity": .75 })); }
+    }
+    let d = ""; for (let x = X0; x <= X1; x += .5) d += `${d ? "L" : "M"}${sx(x)} ${sy(pdf(x))} `;
+    svg.append(svgEl("path", { d, fill: "none", class: "vz-sink", "stroke-width": 2.2 }));
+    svg.append(svgEl("text", { x: sx(m), y: sy(pdf(m) * .45), "text-anchor": "middle", class: "vz-tb" }, "68 %"), svgEl("text", { x: sx(m + 1.5 * s), y: sy(pdf(m + 1.5 * s) * .3), "text-anchor": "middle", class: "vz-tm" }, "95 %"));
+    const within = sample.length ? Math.round(100 * sample.filter(v => Math.abs(v - m) < s).length / sample.length) : null;
+    note.innerHTML = `Zone foncée : μ ± σ = [${m - s} ; ${m + s}], environ <b>68 %</b> des valeurs. Zone claire : μ ± 2σ, environ <b>95 %</b>.` + (within != null ? ` Dans ton tirage : <b>${within} %</b> des valeurs sont à moins d'un écart-type.` : "");
+  };
+  mu.addEventListener("input", () => { sample = []; draw(); }); sg.addEventListener("input", () => { sample = []; draw(); });
+  drawBtn.addEventListener("click", () => { const m = +mu.value, s = +sg.value; sample = Array.from({ length: 500 }, () => m + s * randn()); draw(); });
+  draw();
+};
+
+/* ---------- produit matriciel ---------- */
+VIZ.matmul = el => {
+  const { body, ctrl, note } = vizShell(el, "Prédire avec X @ w + b", "algèbre linéaire");
+  const X = [[1, 2], [3, 4], [5, 6]], w = [0.5, -1], b = 2;
+  let r = 0, timer = null;
+  const draw = () => {
+    const y = X.map(row => row[0] * w[0] + row[1] * w[1] + b);
+    body.innerHTML = `<div style="display:flex;gap:18px;align-items:center;flex-wrap:wrap;justify-content:center;font:14px var(--mono)">
+      <div><p class="vcap">X (3 × 2)</p><table class="vtab">${X.map((row, i) => `<tr class="${i === r ? "hl" : ""}">${row.map(v => `<td>${v}</td>`).join("")}</tr>`).join("")}</table></div>
+      <span>@</span>
+      <div><p class="vcap">w (2,)</p><table class="vtab">${w.map(v => `<tr class="hl"><td>${v}</td></tr>`).join("")}</table></div>
+      <span>+ ${b} =</span>
+      <div><p class="vcap">ŷ (3,)</p><table class="vtab">${y.map((v, i) => `<tr class="${i === r ? "hl" : ""}"><td>${v}</td></tr>`).join("")}</table></div></div>`;
+    note.innerHTML = `Ligne ${r + 1} : ${X[r][0]} × ${w[0]} + ${X[r][1]} × (${w[1]}) + ${b} = <b>${y[r]}</b>. Chaque prédiction est le <b>produit scalaire</b> d'une ligne de X avec w, plus le biais. Les trois sont calculées en une seule opération.`;
+  };
+  btnCtl(ctrl, "Ligne suivante", "btn small primary").addEventListener("click", () => { r = (r + 1) % 3; draw(); });
+  btnCtl(ctrl, "Lecture automatique").addEventListener("click", e => { if (timer) { clearInterval(timer); timer = null; e.target.textContent = "Lecture automatique"; } else { timer = setInterval(() => { if (!el.isConnected) { clearInterval(timer); return; } r = (r + 1) % 3; draw(); }, 1600); e.target.textContent = "Pause"; } });
+  draw();
+};
+
+/* ---------- descente de gradient ---------- */
+VIZ.gradient = el => {
+  const { body, ctrl, note } = vizShell(el, "La descente de gradient pas à pas", "optimisation");
+  body.innerHTML = `<svg viewBox="0 0 600 272" role="img" aria-label="Descente de gradient sur une parabole"></svg>`;
+  const svg = $("svg", body);
+  const eta = rangeCtl(ctrl, `eta${++vizUid}`, "Taux η", 0.02, 1.1, 0.01, 0.1, v => v.toFixed(2));
+  const x0 = rangeCtl(ctrl, `x0${vizUid}`, "Départ", -6, 12, 0.5, 10);
+  const go = btnCtl(ctrl, "Lancer", "btn small primary");
+  const f = x => (x - 3) ** 2, df = x => 2 * (x - 3);
+  const L = 40, W = 520, T = 15, H = 210, XA = -7, XB = 13, YB = 110;
+  const sx = x => L + (x - XA) / (XB - XA) * W, sy = y => T + H - Math.min(y, YB) / YB * H;
+  let path = [], k = 0, timer = null;
+  const base = () => {
+    svg.innerHTML = "";
+    svg.append(svgEl("line", { x1: L, x2: L + W, y1: T + H, y2: T + H, class: "vz-line" }));
+    for (let x = -6; x <= 12; x += 3) svg.append(svgEl("text", { x: sx(x), y: T + H + 16, "text-anchor": "middle", class: "vz-tm" }, x));
+    let d = ""; for (let x = XA; x <= XB; x += .1) d += `${d ? "L" : "M"}${sx(x)} ${sy(f(x))} `;
+    svg.append(svgEl("path", { d, fill: "none", class: "vz-smuted", "stroke-width": 2 }));
+    svg.append(svgEl("text", { x: sx(3), y: T + H + 34, "text-anchor": "middle", class: "vz-tm" }, "minimum : x = 3"));
+  };
+  const drawPath = () => {
+    base();
+    for (let i = 0; i <= k && i < path.length; i++) {
+      const x = path[i];
+      if (i > 0) { const p = path[i - 1]; svg.append(svgEl("line", { x1: sx(p), y1: sy(f(p)), x2: sx(x), y2: sy(f(x)), class: "vz-sacc", "stroke-width": 1.5, "stroke-opacity": .6 })); }
+      svg.append(svgEl("circle", { cx: sx(Math.max(XA, Math.min(XB, x))), cy: sy(f(x)), r: i === k ? 7 : 4, class: i === k ? "vz-mark" : "vz-accent", stroke: "var(--ink)", "stroke-width": i === k ? 1.5 : 0 }));
+    }
+    const x = path[Math.min(k, path.length - 1)];
+    const div = Math.abs(x) > 40;
+    note.innerHTML = `Étape <b>${k}</b> · x = ${x.toFixed(3)} · perte = ${f(x).toFixed(3)} · pente = ${df(x).toFixed(2)}. ` + (div ? "<b>Divergence</b> : avec η > 1, chaque pas saute plus loin que le précédent." : +eta.value < .05 ? "Avec un η très petit, on avance très lentement." : +eta.value > .9 ? "η proche de 1 : on rebondit d'un côté à l'autre du minimum." : "La pente diminue près du minimum, donc les pas raccourcissent.");
+  };
+  const start = () => {
+    clearInterval(timer);
+    path = [+x0.value]; for (let i = 0; i < 30; i++) { const x = path[path.length - 1]; path.push(x - +eta.value * df(x)); }
+    k = 0; drawPath();
+    if (reduceMotion()) { k = path.length - 1; drawPath(); return; }
+    timer = setInterval(() => { if (!el.isConnected || k >= path.length - 1) { clearInterval(timer); return; } k++; drawPath(); }, 280);
+  };
+  go.addEventListener("click", start);
+  [eta, x0].forEach(i => i.addEventListener("change", start));
+  path = [10]; base(); drawPath();
+  note.innerHTML = "Règle de mise à jour : <b>x ← x − η × f'(x)</b>. Change le taux d'apprentissage η puis clique sur Lancer. Essaie 0,02, 0,5, 0,95 et 1,05.";
+};
+
+/* ---------- train / test split ---------- */
+VIZ.split = el => {
+  const { body, ctrl, note } = vizShell(el, "Séparer entraînement et test", "évaluation");
+  body.innerHTML = `<svg viewBox="0 0 600 120" role="img" aria-label="Répartition des exemples entre entraînement et test"></svg>`;
+  const svg = $("svg", body);
+  const n = 40; let seed = 3;
+  const cls = Array.from({ length: n }, (_, i) => i < 28 ? 0 : 1);       // 70 % / 30 %
+  const ts = rangeCtl(ctrl, `ts${++vizUid}`, "test_size", 0.1, 0.5, 0.05, 0.2, v => v.toFixed(2));
+  const strat = h(`<label><input type="checkbox" checked id="st${vizUid}"> stratify=y</label>`); ctrl.appendChild(strat);
+  const shuf = btnCtl(ctrl, "Changer random_state");
+  const rnd = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
+  const draw = () => {
+    const t = +ts.value, k = Math.round(n * t), st = $("input", strat).checked;
+    let s0 = seed; const r = () => { s0 = (s0 * 9301 + 49297) % 233280; return s0 / 233280; };
+    const idx = [...Array(n).keys()].sort(() => r() - .5);
+    let test;
+    if (st) { const k1 = Math.round(k * 12 / 40); test = new Set([...idx.filter(i => cls[i] === 1).slice(0, k1), ...idx.filter(i => cls[i] === 0).slice(0, k - k1)]); }
+    else test = new Set(idx.slice(0, k));
+    svg.innerHTML = "";
+    for (let i = 0; i < n; i++) {
+      const x = 20 + (i % 20) * 28, y = 22 + Math.floor(i / 20) * 34, te = test.has(i);
+      const shape = cls[i] ? svgEl("rect", { x: x - 8, y: y - 8, width: 16, height: 16, rx: 3 }) : svgEl("circle", { cx: x, cy: y, r: 8 });
+      shape.setAttribute("class", te ? "vz-mark" : "vz-accent"); shape.setAttribute("stroke", "var(--ink)"); shape.setAttribute("stroke-width", te ? 1.5 : 0);
+      svg.append(shape);
+    }
+    svg.append(svgEl("text", { x: 20, y: 108, class: "vz-tm" }, "● classe 0   ■ classe 1   bleu = entraînement   jaune = test"));
+    const t1 = [...test].filter(i => cls[i]).length;
+    note.innerHTML = `<b>${n - k}</b> exemples d'entraînement, <b>${k}</b> de test. Classe 1 dans le test : <b>${k ? Math.round(100 * t1 / k) : 0} %</b> (30 % dans les données). ${st ? "Avec <code>stratify</code>, la proportion est respectée." : "Sans <code>stratify</code>, le hasard peut déséquilibrer le jeu de test : relance plusieurs fois."}`;
+  };
+  ts.addEventListener("input", draw); $("input", strat).addEventListener("change", draw); shuf.addEventListener("click", () => { rnd(); draw(); });
+  draw();
+};
+
+/* ---------- sous- et sur-apprentissage ---------- */
+VIZ.overfit = el => {
+  const { body, ctrl, note } = vizShell(el, "Trop simple, juste bien, trop complexe", "biais-variance");
+  body.innerHTML = `<div class="vgrid"><div><svg viewBox="0 0 300 220" class="fit" role="img" aria-label="Ajustement polynomial"></svg></div><div><svg viewBox="0 0 300 220" class="err" role="img" aria-label="Erreurs d'entraînement et de test selon le degré"></svg></div></div>`;
+  const deg = rangeCtl(ctrl, `dg${++vizUid}`, "Complexité (degré)", 1, 12, 1, 3);
+  let s = 7; const r = () => { s = (s * 16807) % 2147483647; return s / 2147483647; };
+  const g = x => Math.sin(2.6 * x) + 0.3 * x;
+  const mk = (n, off) => Array.from({ length: n }, (_, i) => { const x = -1 + 2 * (i + off) / n; return [x, g(x) + (r() - .5) * 0.7]; });
+  const train = mk(14, 0.2), test = mk(14, 0.7);
+  function fit(pts, d) {
+    const m = d + 1, A = Array.from({ length: m }, () => Array(m + 1).fill(0));
+    for (const [x, y] of pts) { const p = Array.from({ length: m }, (_, k) => x ** k); for (let i = 0; i < m; i++) { for (let j = 0; j < m; j++) A[i][j] += p[i] * p[j]; A[i][m] += p[i] * y; } }
+    for (let i = 0; i < m; i++) A[i][i] += 1e-7;
+    for (let i = 0; i < m; i++) { let piv = i; for (let k = i + 1; k < m; k++) if (Math.abs(A[k][i]) > Math.abs(A[piv][i])) piv = k; [A[i], A[piv]] = [A[piv], A[i]]; for (let k = 0; k < m; k++) if (k !== i) { const f = A[k][i] / A[i][i]; for (let j = i; j <= m; j++) A[k][j] -= f * A[i][j]; } }
+    const c = A.map((row, i) => row[m] / row[i]);
+    return x => c.reduce((a, ci, k) => a + ci * x ** k, 0);
+  }
+  const mse = (p, pts) => pts.reduce((a, [x, y]) => a + (p(x) - y) ** 2, 0) / pts.length;
+  const curves = Array.from({ length: 12 }, (_, i) => { const p = fit(train, i + 1); return [mse(p, train), mse(p, test), p]; });
+  const draw = () => {
+    const d = +deg.value, [tr, te, p] = curves[d - 1];
+    const sf = $("svg.fit", body); sf.innerHTML = "";
+    const X = x => 20 + (x + 1) / 2 * 260, Y = y => 110 - y * 55;
+    sf.append(svgEl("text", { x: 20, y: 14, class: "vz-tm" }, `degré ${d}`));
+    let path = ""; for (let x = -1; x <= 1.0001; x += .01) { const y = Math.max(-1.9, Math.min(1.9, p(x))); path += `${path ? "L" : "M"}${X(x)} ${Y(y)} `; }
+    sf.append(svgEl("path", { d: path, fill: "none", class: "vz-sacc", "stroke-width": 2.2 }));
+    train.forEach(([x, y]) => sf.append(svgEl("circle", { cx: X(x), cy: Y(y), r: 4, class: "vz-accent" })));
+    test.forEach(([x, y]) => sf.append(svgEl("rect", { x: X(x) - 4, y: Y(y) - 4, width: 8, height: 8, class: "vz-mark", stroke: "var(--ink)", "stroke-width": 1 })));
+    sf.append(svgEl("text", { x: 20, y: 212, class: "vz-tm" }, "● entraînement   ■ test"));
+    const se = $("svg.err", body); se.innerHTML = "";
+    const ymax = .6, EX = i => 30 + (i - 1) / 11 * 250, EY = v => 190 - Math.min(v, ymax) / ymax * 170;
+    se.append(svgEl("line", { x1: 30, x2: 280, y1: 190, y2: 190, class: "vz-line" }));
+    [[0, "vz-sacc", "entraînement"], [1, "vz-serr", "test"]].forEach(([k, c, lab], j) => { let pth = ""; curves.forEach((cv, i) => { pth += `${pth ? "L" : "M"}${EX(i + 1)} ${EY(cv[k])} `; }); se.append(svgEl("path", { d: pth, fill: "none", class: c, "stroke-width": 2 }), svgEl("text", { x: 190, y: 20 + j * 16, style: `font:600 11px var(--mono);fill:var(--${k ? "err" : "accent"})` }, "── " + lab)); });
+    se.append(svgEl("line", { x1: EX(d), x2: EX(d), y1: 10, y2: 190, class: "vz-smuted", "stroke-dasharray": "3 3" }));
+    se.append(svgEl("text", { x: 30, y: 206, class: "vz-tm" }, "erreur (MSE) selon le degré, de 1 à 12"));
+    note.innerHTML = `Erreur d'entraînement <b>${tr.toFixed(3)}</b>, erreur de test <b>${te.toFixed(3)}</b>. ` + (d <= 2 ? "Le modèle est <b>trop simple</b> : il se trompe partout (sous-apprentissage)." : d >= 8 ? "Le modèle colle aux points d'entraînement, bruit compris, et se trompe sur le test : <b>surapprentissage</b>." : "Bon compromis : l'erreur de test est proche de son minimum.");
+  };
+  deg.addEventListener("input", draw); draw();
+};
+
+/* ---------- RAG : recherche par similarité ---------- */
+VIZ.rag = el => {
+  const { body, ctrl, note } = vizShell(el, "Retrouver les bons documents", "RAG");
+  const docs = [["Descente de gradient", [.9, .3]], ["Taux d'apprentissage", [.85, .45]], ["Rétropropagation", [.7, .55]], ["Charger un CSV", [-.6, .8]], ["groupby pandas", [-.75, .6]], ["Jointures SQL", [-.5, .9]], ["Clé d'API", [-.2, -.9]], ["Docker", [.1, -.95]], ["Surapprentissage", [.6, .75]]];
+  const qs = [["Comment régler le learning rate ?", [.92, .38]], ["Fusionner deux tables ?", [-.55, .85]], ["Déployer mon modèle ?", [.05, -.98]]];
+  let qi = 0;
+  body.innerHTML = `<div class="vgrid"><div><svg viewBox="-1.2 -1.2 2.4 2.4" style="max-width:300px;margin:auto" role="img" aria-label="Espace des embeddings"></svg></div><div><p class="vcap">Prompt envoyé au LLM</p><pre class="json"></pre></div></div>`;
+  const k = rangeCtl(ctrl, `k${++vizUid}`, "k documents", 1, 4, 1, 2);
+  const sel = h(`<label for="q${vizUid}">Question <select id="q${vizUid}" class="btn small">${qs.map((q, i) => `<option value="${i}">${esc(q[0])}</option>`).join("")}</select></label>`); ctrl.appendChild(sel);
+  const cos = (a, b) => (a[0] * b[0] + a[1] * b[1]) / (Math.hypot(...a) * Math.hypot(...b));
+  const draw = () => {
+    const [qt, qv] = qs[qi], K = +k.value;
+    const ranked = docs.map(d => [d[0], d[1], cos(qv, d[1])]).sort((a, b) => b[2] - a[2]);
+    const top = new Set(ranked.slice(0, K).map(d => d[0]));
+    const svg = $("svg", body); svg.innerHTML = "";
+    svg.append(svgEl("circle", { cx: 0, cy: 0, r: 1, fill: "none", class: "vz-line", "stroke-width": .01 }));
+    ranked.forEach(([n, v]) => { if (top.has(n)) svg.append(svgEl("line", { x1: qv[0], y1: -qv[1], x2: v[0], y2: -v[1], class: "vz-sacc", "stroke-width": .015 })); });
+    docs.forEach(([n, v]) => { svg.append(svgEl("circle", { cx: v[0], cy: -v[1], r: .05, class: top.has(n) ? "vz-accent" : "vz-muted" })); svg.append(svgEl("text", { x: v[0] + .07, y: -v[1] + .03, style: `font:${top.has(n) ? 600 : 400} .085px var(--body);fill:var(--${top.has(n) ? "ink" : "muted"})` }, n)); });
+    svg.append(svgEl("rect", { x: qv[0] - .06, y: -qv[1] - .06, width: .12, height: .12, class: "vz-mark", stroke: "var(--ink)", "stroke-width": .015 }));
+    $("pre", body).textContent = `Réponds uniquement à partir du contexte.\n\nContexte :\n${ranked.slice(0, K).map(d => `- [${d[0]}] (similarité ${d[2].toFixed(2)})`).join("\n")}\n\nQuestion : ${qt}`;
+    note.innerHTML = "Chaque texte devient un <b>vecteur</b> (embedding). La question (carré jaune) est comparée à tous les documents par <b>similarité cosinus</b> ; les <b>k</b> plus proches sont ajoutés au prompt.";
+  };
+  k.addEventListener("input", draw); $("select", sel).addEventListener("change", e => { qi = +e.target.value; draw(); });
+  draw();
+};
+
+/* ---------- token suivant et température ---------- */
+VIZ.nexttoken = el => {
+  const { body, ctrl, note } = vizShell(el, "Le token suivant", "LLM");
+  const ctx = "La capitale de la France est";
+  const cand = [["Paris", 6.0], ["une", 3.2], ["la", 2.6], ["Lyon", 1.6], ["située", 1.3], ["Marseille", 0.6], ["belle", 0.2]];
+  const T = rangeCtl(ctrl, `t${++vizUid}`, "Température", 0.1, 2.5, 0.05, 1, v => v.toFixed(2));
+  const tirer = btnCtl(ctrl, "Tirer un token", "btn small primary");
+  let tires = [];
+  const probs = () => { const t = +T.value, z = cand.map(c => c[1] / t), m = Math.max(...z), e = z.map(v => Math.exp(v - m)), s = e.reduce((a, b) => a + b, 0); return e.map(v => v / s); };
+  const draw = () => {
+    const p = probs();
+    body.innerHTML = `<p style="font:15px var(--mono);margin:0 0 12px">${esc(ctx)} <span class="mark">▁▁▁</span></p>` +
+      cand.map((c, i) => `<div style="display:grid;grid-template-columns:90px 1fr 56px;gap:8px;align-items:center;margin:4px 0;font:13px var(--mono)"><span>${c[0]}</span><div class="bar" style="height:14px"><i style="width:${(p[i] * 100).toFixed(1)}%;transition:width .2s"></i></div><span class="tab" style="text-align:right">${(p[i] * 100).toFixed(1)} %</span></div>`).join("") +
+      (tires.length ? `<p class="vcap" style="margin-top:12px">Tirages</p><p style="font:13px var(--mono);margin:0">${tires.map(t => `<span class="badge${t === "Paris" ? "" : " jedha"}">${esc(t)}</span>`).join(" ")}</p>` : "");
+    const t = +T.value;
+    note.innerHTML = t < 0.4 ? "Température basse : « Paris » écrase tout, la réponse est quasi déterministe." : t > 1.6 ? "Température haute : la distribution s'aplatit, des tokens improbables apparaissent souvent." : "Température moyenne : le token le plus probable domine, mais d'autres sortent parfois.";
+  };
+  T.addEventListener("input", () => { tires = []; draw(); });
+  tirer.addEventListener("click", () => { const p = probs(); let r = Math.random(), i = 0; while (i < p.length - 1 && r > p[i]) { r -= p[i]; i++; } tires.push(cand[i][0]); if (tires.length > 14) tires.shift(); draw(); });
+  draw();
+};
+
+/* ---------- BPE ---------- */
+VIZ.bpe = el => {
+  const { body, ctrl, note } = vizShell(el, "Le découpage BPE, fusion par fusion", "tokens");
+  const start = ["l o w", "l o w e r", "n e w e s t", "w i d e s t", "l o w e s t"];
+  let corpus = start.slice(), merges = [];
+  const step = () => {
+    const c = new Map();
+    corpus.forEach(m => { const s = m.split(" "); for (let i = 0; i < s.length - 1; i++) { const k = s[i] + " " + s[i + 1]; c.set(k, (c.get(k) || 0) + 1); } });
+    if (!c.size) return false;
+    let best = null; for (const [k, v] of c) if (!best || v > best[1]) best = [k, v];
+    const [a, b] = best[0].split(" ");
+    corpus = corpus.map(m => { const s = m.split(" "), o = []; for (let i = 0; i < s.length; i++) { if (i < s.length - 1 && s[i] === a && s[i + 1] === b) { o.push(a + b); i++; } else o.push(s[i]); } return o.join(" "); });
+    merges.push(`${a} + ${b} → ${a + b} (${best[1]} fois)`);
+    return true;
+  };
+  const draw = () => {
+    body.innerHTML = `<div class="vgrid"><div><p class="vcap">Corpus découpé</p>${corpus.map(m => `<div style="margin:6px 0">${m.split(" ").map(t => `<span class="badge${t.length > 1 ? " jedha" : ""}" style="font-family:var(--mono);margin-right:3px">${esc(t)}</span>`).join("")}</div>`).join("")}</div>
+      <div><p class="vcap">Fusions apprises</p><ol style="margin:0;padding-left:1.3em;font:13px var(--mono)">${merges.map(m => `<li>${esc(m)}</li>`).join("") || "<li class='muted'>aucune pour l'instant</li>"}</ol></div></div>`;
+    const n = corpus.reduce((a, m) => a + m.split(" ").length, 0);
+    note.innerHTML = `<b>${n} tokens</b> pour 5 mots. Chaque fusion crée un nouveau token à partir de la paire voisine la plus fréquente : les morceaux fréquents (« low », « est ») deviennent des tokens entiers.`;
+  };
+  btnCtl(ctrl, "Fusion suivante", "btn small primary").addEventListener("click", () => { step(); draw(); });
+  btnCtl(ctrl, "Recommencer").addEventListener("click", () => { corpus = start.slice(); merges = []; draw(); });
+  draw();
+};
+
+/* ---------- la boucle d'un agent ---------- */
+VIZ.agent = el => {
+  const { body, ctrl, note } = vizShell(el, "La boucle d'un agent", "agents");
+  const steps = [
+    ["user", "Utilisateur", "Quel temps fait-il à Lyon, et faut-il un parapluie demain ?"],
+    ["llm", "LLM", "Je dois connaître la météo. → appel d'outil : meteo(ville=\"Lyon\")"],
+    ["tool", "Outil · meteo", "{ \"aujourd_hui\": \"15 °C, soleil\", \"demain\": \"pluie 80 %\" }"],
+    ["llm", "LLM", "J'ai l'information, pas besoin d'autre outil. → réponse finale"],
+    ["final", "Réponse", "Il fait 15 °C et beau à Lyon. Demain, 80 % de risque de pluie : prends un parapluie."],
+  ];
+  const nodes = [["user", 70, "Utilisateur"], ["llm", 300, "LLM"], ["tool", 530, "Outils"]];
+  let k = 0;
+  const draw = () => {
+    const cur = steps[k][0] === "final" ? "user" : steps[k][0];
+    const svg = `<svg viewBox="0 0 600 130">${nodes.map(([id, x, lab]) => `<g><rect x="${x - 60}" y="20" width="120" height="50" rx="12" class="${cur === id ? "vz-accent" : "vz-code"}" stroke="var(--line)"/><text x="${x}" y="50" text-anchor="middle" class="vz-tb" style="${cur === id ? "fill:var(--surface)" : ""}">${lab}</text></g>`).join("")}
+      <path d="M130 38 L240 38" class="vz-smuted" stroke-width="2"/><path d="M360 38 L470 38" class="vz-smuted" stroke-width="2"/>
+      <path d="M470 55 L360 55" class="vz-smuted" stroke-width="2" stroke-dasharray="4 3"/><path d="M240 55 L130 55" class="vz-smuted" stroke-width="2" stroke-dasharray="4 3"/>
+      <path d="M300 70 C 300 120, 360 120, 360 90 C 360 75, 330 72, 318 72" fill="none" class="vz-smuted" stroke-width="1.5"/>
+      <text x="380" y="115" class="vz-tm">boucle jusqu'à la réponse finale</text></svg>`;
+    body.innerHTML = svg + `<div style="margin-top:8px">${steps.slice(0, k + 1).map(([t, who, txt], i) => `<div class="msg ${t === "user" ? "me" : "ai"}" style="margin:6px 0;${i === k ? "outline:2px solid var(--accent)" : ""}"><b>${esc(who)}</b> · ${esc(txt)}</div>`).join("")}</div>`;
+    note.innerHTML = ["L'utilisateur pose une question.", "Le LLM ne répond pas directement : il <b>demande</b> l'appel d'un outil.", "<b>Ton code</b> exécute l'outil et renvoie le résultat (l'observation) au LLM.", "Le LLM décide s'il lui faut une autre étape. Ici, non.", "Réponse finale. L'agent s'arrête aussi s'il atteint le nombre maximal d'étapes."][k];
+  };
+  btnCtl(ctrl, "Étape suivante", "btn small primary").addEventListener("click", () => { k = (k + 1) % steps.length; draw(); });
+  draw();
+};
+
+/* ---------- n8n : des items qui traversent des nœuds ---------- */
+VIZ.n8n = el => {
+  const { body, ctrl, note } = vizShell(el, "Un workflow n8n", "automatisation");
+  const items = [{ titre: "Lancement produit", vues: 1200, langue: "fr" }, { titre: "Product launch", vues: 300, langue: "en" }, { titre: "Bilan trimestriel", vues: 4500, langue: "fr" }];
+  const stages = [
+    ["Déclencheur", "Schedule · tous les lundis", items],
+    ["HTTP Request", "GET /articles", items],
+    ["IF", "{{ $json.langue }} = fr", items.filter(i => i.langue === "fr")],
+    ["Modèle de langage", "Résume {{ $json.titre }}", items.filter(i => i.langue === "fr").map(i => ({ ...i, resume: "Résumé généré…" }))],
+    ["Slack", "Envoie au canal #veille", items.filter(i => i.langue === "fr").map(i => ({ ...i, resume: "Résumé généré…" }))],
+  ];
+  let k = 0;
+  const draw = () => {
+    body.innerHTML = `<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">${stages.map((s, i) => `<div class="badge ${i === k ? "jedha" : ""}" style="padding:8px 10px;font-size:12px;${i === k ? "outline:2px solid var(--accent)" : ""}"><b>${esc(s[0])}</b></div>${i < stages.length - 1 ? "<span class='muted'>→</span>" : ""}`).join("")}</div>
+      <p class="vcap" style="margin-top:12px">${esc(stages[k][0])} · ${esc(stages[k][1])} · ${stages[k][2].length} item(s) en sortie</p><pre class="json">${esc(JSON.stringify(stages[k][2].map(j => ({ json: j })), null, 1))}</pre>`;
+    note.innerHTML = "Chaque nœud reçoit une <b>liste d'items</b> et en renvoie une autre. Les expressions <code>{{ $json.champ }}</code> lisent les champs de l'item courant.";
+  };
+  btnCtl(ctrl, "Nœud suivant", "btn small primary").addEventListener("click", () => { k = (k + 1) % stages.length; draw(); });
+  draw();
+};
+
+/* ---------- découpage en morceaux ---------- */
+VIZ.chunk = el => {
+  const { body, ctrl, note } = vizShell(el, "Découper un document en morceaux", "RAG");
+  const words = "Les fichiers supprimés restent dans la corbeille pendant 30 jours avec l'offre Gratuite et 180 jours avec l'offre Pro. Pour restaurer un fichier, ouvre la corbeille depuis le site web, sélectionne le fichier puis clique sur Restaurer.".split(" ");
+  const size = rangeCtl(ctrl, `cs${++vizUid}`, "Taille (mots)", 4, 20, 1, 10);
+  const ov = rangeCtl(ctrl, `co${vizUid}`, "Chevauchement", 0, 8, 1, 3);
+  const cols = ["gcolor-0", "gcolor-1", "gcolor-2"];
+  const draw = () => {
+    let s = +size.value, o = Math.min(+ov.value, s - 1); const pas = s - o, chunks = [];
+    for (let d = 0; d < words.length; d += pas) { chunks.push([d, Math.min(d + s, words.length)]); if (d + s >= words.length) break; }
+    body.innerHTML = chunks.map(([a, b], i) => `<div style="margin:6px 0;font:13px/1.9 var(--body)"><span class="badge" style="margin-right:6px">#${i + 1}</span>${words.map((w, j) => j >= a && j < b ? `<span class="${cols[i % 3]}" style="padding:1px 2px;border-radius:3px">${esc(w)}</span>` : "").filter(Boolean).join(" ")}</div>`).join("");
+    note.innerHTML = `<b>${chunks.length} morceaux</b>. Chaque morceau commence ${pas} mots après le précédent ; les ${o} derniers mots de l'un sont repris au début du suivant, pour ne pas couper une information en deux. Trop petit : on perd le contexte. Trop grand : la recherche devient imprécise.`;
+  };
+  size.addEventListener("input", draw); ov.addEventListener("input", draw); draw();
+};
+
+"use strict";
+/* ================================================================ utilitaires */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const h = (html) => { const t = document.createElement("template"); t.innerHTML = html.trim(); return t.content.firstElementChild; };
+const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
+const pct = (a, b) => b ? Math.round(100 * a / b) : 0;
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+/* ================================================================ contenu */
+let C = null;
+const MOD = {};        // id module -> { module, track }
+const HOME = {};       // id item/quiz -> id module de rattachement
+const ORDER = [];      // parcours ordonné d'items et de quiz (sans doublons)
+const ITEM = id => (C.items[id] || C.quizzes[id] || null);
+
+function indexContent() {
+  const seen = new Set();
+  const push = (id, mid) => { if (!seen.has(id)) { seen.add(id); ORDER.push(id); HOME[id] = mid; } };
+  for (const T of C.tracks) for (const M of T.modules) {
+    MOD[M.id] = { M, T };
+    for (const s of M.sections) for (const id of s.lecons) push(id, M.id);
+    for (const id of M.projets) push(id, M.id);
+    for (const id of M.quiz) push(id, M.id);
+  }
+}
+function moduleItems(M) {
+  const ids = [];
+  for (const s of M.sections) for (const id of s.lecons) if (!ids.includes(id)) ids.push(id);
+  for (const id of M.projets) if (!ids.includes(id)) ids.push(id);
+  for (const id of M.quiz) if (!ids.includes(id)) ids.push(id);
+  return ids;
+}
+
+/* ================================================================ progression */
+const LS_KEY = "mise-a-niveau-ia:v1";
+const LS_CODE = "mise-a-niveau-ia:code:v1";
+const blank = () => ({ v: 1, done: {}, ex: {}, tasks: {}, quiz: {}, days: [], start: null, track: "essentials", week: null });
+let S = blank();
+let CODE = {};
+const store = { ref: null, codeRef: null, mode: "local", timer: null, codeTimer: null, writing: false, again: false, codeWriting: false, codeAgain: false };
+
+function loadLocal() {
+  try { const s = JSON.parse(localStorage.getItem(LS_KEY) || "null"); if (s && s.v === 1) S = Object.assign(blank(), s); } catch (e) {}
+  try { CODE = JSON.parse(localStorage.getItem(LS_CODE) || "{}") || {}; } catch (e) {}
+}
+function merge(a, b) {
+  const m = blank();
+  for (const k of ["done", "ex", "tasks"]) m[k] = Object.assign({}, a[k], b[k]);
+  for (const k of new Set([...Object.keys(a.quiz || {}), ...Object.keys(b.quiz || {})])) m.quiz[k] = Math.max(a.quiz?.[k] ?? 0, b.quiz?.[k] ?? 0);
+  m.days = [...new Set([...(a.days || []), ...(b.days || [])])].sort();
+  m.start = b.start || a.start || null;
+  m.track = b.track || a.track || "essentials";
+  m.week = b.week ?? a.week ?? null;
+  return m;
+}
+function touchDay() { const d = today(); if (!S.days.includes(d)) S.days.push(d); }
+function save() {
+  touchDay();
+  try { localStorage.setItem(LS_KEY, JSON.stringify(S)); } catch (e) {}
+  updateGlobal();
+  if (store.ref) { clearTimeout(store.timer); store.timer = setTimeout(pushRemote, 1200); }
+}
+async function pushRemote() {
+  if (!store.ref) return;
+  if (store.writing) { store.again = true; return; }
+  store.writing = true;
+  try { await store.ref.set(JSON.parse(JSON.stringify(S))); setSync("compte"); }
+  catch (e) { if (e && ["invalid_argument", "revoked", "not_granted"].includes(e.code)) { store.ref = null; store.codeRef = null; setSync("local"); } }
+  store.writing = false;
+  if (store.again) { store.again = false; pushRemote(); }
+}
+function saveCode(id, code) {
+  CODE[id] = code;
+  try { localStorage.setItem(LS_CODE, JSON.stringify(CODE)); } catch (e) {}
+  if (store.codeRef) { clearTimeout(store.codeTimer); store.codeTimer = setTimeout(pushCode, 2500); }
+}
+async function pushCode() {
+  if (!store.codeRef) return;
+  if (store.codeWriting) { store.codeAgain = true; return; }
+  store.codeWriting = true;
+  try { await store.codeRef.set(JSON.parse(JSON.stringify({ code: CODE }))); } catch (e) {}
+  store.codeWriting = false;
+  if (store.codeAgain) { store.codeAgain = false; pushCode(); }
+}
+function setSync(mode) {
+  store.mode = mode;
+  const el = $("#sync");
+  if (el) el.textContent = mode === "compte" ? "Ta progression et ton code sont enregistrés sur ton compte : tu les retrouves sur tous tes appareils." : "Ta progression est enregistrée dans ce navigateur.";
+}
+async function connectStore() {
+  if (!window.claude || typeof window.claude.use !== "function") return;
+  try {
+    const [db, user] = await Promise.all([window.claude.use("db"), window.claude.use("user")]);
+    if (!db || !user) return;
+    const uid = await user.id();
+    if (!uid) return;
+    const ref = db.doc(`data/users/${uid}/progress`);
+    const codeRef = db.doc(`data/users/${uid}/code`);
+    const res = await Promise.race([Promise.all([ref.get(), codeRef.get()]), sleep(10000).then(() => "timeout")]);
+    if (res === "timeout") return;
+    const [snap, csnap] = res;
+    store.ref = ref; store.codeRef = codeRef;
+    if (snap.exists) S = merge(S, snap.data() || {});
+    if (csnap.exists) CODE = Object.assign({}, CODE, (csnap.data() || {}).code || {});
+    try { localStorage.setItem(LS_KEY, JSON.stringify(S)); localStorage.setItem(LS_CODE, JSON.stringify(CODE)); } catch (e) {}
+    setSync("compte");
+    if (!snap.exists && (Object.keys(S.done).length || Object.keys(S.ex).length)) pushRemote();
+    if (!csnap.exists && Object.keys(CODE).length) pushCode();
+    const a = document.activeElement;
+    if (!(a && (a.tagName === "TEXTAREA" || a.tagName === "INPUT"))) render(); else updateGlobal();
+  } catch (e) { /* on reste en local */ }
+}
+
+/* ================================================================ calculs */
+const passMark = q => Math.ceil(0.75 * q.questions.length);
+function quizPassed(id) { const q = C.quizzes[id]; return q && (S.quiz[id] ?? 0) >= passMark(q); }
+function unitsOf(id) {
+  const it = ITEM(id); if (!it) return [0, 0];
+  if (it.kind === "quiz") return [2, quizPassed(id) ? 2 : 0];
+  const ex = it.exercises || [];
+  return [1 + ex.length, (S.done[id] ? 1 : 0) + ex.filter(e => S.ex[e.id]).length];
+}
+function statsOf(ids) { let t = 0, d = 0; for (const id of ids) { const [a, b] = unitsOf(id); t += a; d += b; } return { total: t, done: d, p: pct(d, t) }; }
+function moduleStats(M) { return statsOf(moduleItems(M)); }
+function coverage(M) { const n = M.sections.length; const c = M.sections.filter(s => s.lecons.length).length; return { n, c, p: pct(c, n) }; }
+function trackStats(T) { const ids = new Set(); for (const M of T.modules) for (const id of moduleItems(M)) ids.add(id); return statsOf([...ids]); }
+function globalStats() { return statsOf(ORDER).p; }
+function itemState(id) {
+  const it = ITEM(id); if (!it) return "";
+  if (it.kind === "quiz") { const s = S.quiz[id]; return quizPassed(id) ? "done" : s ? "half" : ""; }
+  if (S.done[id]) return "done";
+  return (it.exercises || []).some(e => S.ex[e.id]) ? "half" : "";
+}
+function nextItem() { return ORDER.find(id => itemState(id) !== "done") || null; }
+function streak() {
+  const set = new Set(S.days); let n = 0; const d = new Date();
+  if (!set.has(today())) d.setDate(d.getDate() - 1);
+  for (;;) { const k = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; if (!set.has(k)) break; n++; d.setDate(d.getDate() - 1); }
+  return n;
+}
+function weekIds(w) { const ids = []; for (const mid of w.modules) for (const id of moduleItems(MOD[mid].M)) if (!ids.includes(id)) ids.push(id); return ids; }
+function currentWeek() {
+  if (S.week) return S.week;
+  for (const w of C.plan) { const s = statsOf(weekIds(w)); if (s.total && s.p < 100) return w.semaine; }
+  return C.plan[C.plan.length - 1].semaine;
+}
+function updateGlobal() {
+  if (!C) return;
+  const g = globalStats();
+  $("#gmeter").style.width = g + "%";
+  $("#gpct").textContent = g + " %";
+}
+function maybeAutoDone(it) {
+  if (!it.exercises || !it.exercises.length) return;
+  if (it.exercises.every(e => S.ex[e.id]) && !S.done[it.id]) { S.done[it.id] = true; save(); const b = $(".done-btn"); if (b) setDoneBtn(b, it); }
+}
+
+/* ================================================================ Python (Pyodide) */
+const PYODIDE_URL = "https://cdn.jsdelivr.net/pyodide/v0.28.3/full/";
+let pyReady = null, py = null, pyRun = null;
+function loadScript(src) {
+  return new Promise((res, rej) => { const s = document.createElement("script"); s.src = src; s.onload = res; s.onerror = () => rej(new Error("Impossible de charger " + src)); document.head.appendChild(s); });
+}
+function ensurePython(onStatus) {
+  if (pyReady) return pyReady;
+  pyReady = (async () => {
+    onStatus && onStatus("Chargement de Python dans ton navigateur (une seule fois, environ 10 Mo)…");
+    await loadScript(PYODIDE_URL + "pyodide.js");
+    py = await loadPyodide({ indexURL: PYODIDE_URL });
+    for (const [name, src] of Object.entries(C.labs)) py.FS.writeFile(name, src);
+    py.FS.writeFile("runner.py", C.runner);
+    py.runPython("import sys\nsys.path.insert(0, '.')\nimport pxshim, runner\nasync def _run(code, key, check, fresh):\n    return await runner.run_async(code, key, check if check else None, bool(fresh))");
+    pyRun = py.globals.get("_run");
+    onStatus && onStatus("Chargement des jeux de données…");
+    for (const f of ["penguins.csv", "titanic.csv", "tips.csv"]) py.FS.writeFile(f, await (await fetch("data/" + f)).text());
+    return py;
+  })();
+  pyReady.catch(() => { pyReady = null; });
+  return pyReady;
+}
+async function runPython(code, key, check, fresh, onStatus) {
+  await ensurePython(onStatus);
+  const scan = (code + "\n" + (check || "")).replace(/^\s*(import plotly.*|from plotly.*|import fakeapi.*|from brewly.*|import brewly.*|import llm.*|from llm.*|import cloudsync.*|from cloudsync.*)$/gm, "");
+  const needs = /\bbrewly\b/.test(code + (check || "")) ? "import sqlite3\n" : "";
+  try { onStatus && onStatus("Chargement des bibliothèques nécessaires…"); await py.loadPackagesFromImports(needs + scan); } catch (e) {}
+  if (needs) { try { await py.loadPackage("sqlite3"); } catch (e) {} }
+  onStatus && onStatus("Exécution…");
+  await sleep(30);
+  return JSON.parse(await pyRun(code, key, check || "", !!fresh));
+}
+
+/* ================================================================ graphiques Plotly */
+let plotlyReady = null;
+function ensurePlotly() {
+  if (!plotlyReady) { plotlyReady = loadScript("https://cdn.plot.ly/plotly-2.35.2.min.js"); plotlyReady.catch(() => { plotlyReady = null; }); }
+  return plotlyReady;
+}
+function cssVar(n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+async function drawFig(el, json) {
+  await ensurePlotly();
+  const fig = JSON.parse(json);
+  const ink = cssVar("--ink"), line = cssVar("--line"), muted = cssVar("--muted");
+  const lay = Object.assign({
+    paper_bgcolor: "rgba(0,0,0,0)", plot_bgcolor: "rgba(0,0,0,0)",
+    font: { family: "IBM Plex Sans, sans-serif", color: ink, size: 12 },
+    margin: { l: 56, r: 16, t: fig.layout.title ? 48 : 16, b: 48 },
+    colorway: [cssVar("--accent"), "#e0a100", cssVar("--ok"), "#c2410c", "#8b5cf6", "#0e8a9a"], legend: {},
+  }, fig.layout);
+  for (const ax of ["xaxis", "yaxis"]) lay[ax] = Object.assign({ gridcolor: line, zerolinecolor: line, linecolor: line, tickfont: { color: muted } }, fig.layout[ax] || {});
+  if (lay.title) lay.title = Object.assign({ x: 0.02, font: { family: "Bricolage Grotesque, sans-serif", size: 16 } }, lay.title);
+  window.Plotly.newPlot(el, fig.data, lay, { responsive: true, displayModeBar: false });
+}
+
+/* ================================================================ éditeur */
+function highlight(code, lang = "python") {
+  if (window.hljs && hljs.getLanguage(lang)) { try { return hljs.highlight(code, { language: lang, ignoreIllegals: true }).value; } catch (e) {} }
+  return esc(code);
+}
+function makeEditor(code, onChange, onRun) {
+  const wrap = h(`<div class="ed"><pre aria-hidden="true"><code></code></pre><textarea spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" aria-label="Éditeur de code Python"></textarea></div>`);
+  const ta = $("textarea", wrap), pre = $("pre", wrap), co = $("code", wrap);
+  let escaped = false;
+  const sync = () => { co.innerHTML = highlight(ta.value) + "\n"; pre.scrollLeft = ta.scrollLeft; };
+  ta.value = code; sync();
+  ta.addEventListener("input", () => { sync(); onChange && onChange(ta.value); });
+  ta.addEventListener("scroll", () => { pre.scrollLeft = ta.scrollLeft; });
+  ta.addEventListener("keydown", e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === "Enter") { e.preventDefault(); onRun && onRun(); return; }
+    if (e.key === "Escape") { escaped = true; return; }
+    if (e.key === "Tab" && !escaped && !e.shiftKey) { e.preventDefault(); insert("    "); return; }
+    if (e.key === "Tab") { escaped = false; return; }
+    if (e.key === "Enter" && !e.shiftKey && !e.altKey) {
+      const s = ta.selectionStart, before = ta.value.slice(0, s);
+      const cur = before.slice(before.lastIndexOf("\n") + 1);
+      let ind = (cur.match(/^\s*/) || [""])[0];
+      if (/:\s*$/.test(cur)) ind += "    ";
+      e.preventDefault(); insert("\n" + ind);
+    }
+  });
+  function insert(txt) { ta.setRangeText(txt, ta.selectionStart, ta.selectionEnd, "end"); ta.dispatchEvent(new Event("input")); }
+  return { el: wrap, get: () => ta.value, set: v => { ta.value = v; sync(); onChange && onChange(v); } };
+}
+
+/* ================================================================ sorties */
+const ERR_FR = { NameError: "Nom inconnu", SyntaxError: "Erreur de syntaxe", IndentationError: "Erreur d'indentation", TypeError: "Erreur de type", KeyError: "Clé introuvable", IndexError: "Indice hors limites", ZeroDivisionError: "Division par zéro", AttributeError: "Attribut inconnu", ValueError: "Valeur invalide", ModuleNotFoundError: "Module introuvable", ImportError: "Import impossible", OperationalError: "Erreur SQL", DatabaseError: "Erreur SQL" };
+function renderOutput(box, r) {
+  box.innerHTML = "";
+  if (r.stdout) box.appendChild(h(`<div class="out"><pre>${esc(r.stdout)}</pre></div>`));
+  if (r.stderr && !r.error) box.appendChild(h(`<div class="out"><pre class="muted">${esc(r.stderr)}</pre></div>`));
+  if (r.result) {
+    const o = h(`<div class="out"></div>`);
+    if (r.result.html) { o.appendChild(h(`<div class="res">${r.result.html}</div>`)); if (r.result.text) o.appendChild(h(`<div class="note">${esc(r.result.text)}</div>`)); }
+    else o.appendChild(h(`<pre>${esc(r.result.text)}</pre>`));
+    box.appendChild(o);
+  }
+  for (const f of r.figs || []) { const o = h(`<div class="out"><div class="plot"></div></div>`); box.appendChild(o); drawFig($(".plot", o), f).catch(() => { o.innerHTML = `<div class="loading">Le graphique n'a pas pu s'afficher (bibliothèque Plotly indisponible).</div>`; }); }
+  for (const src of r.images || []) box.appendChild(h(`<div class="out"><img alt="Graphique matplotlib" src="${src}"></div>`));
+  if (r.error) {
+    const e = r.error;
+    box.appendChild(h(`<div class="out err"><div class="head">${esc(ERR_FR[e.type] || e.type)}${e.line ? ` · ligne ${e.line}` : ""} — <span style="font-weight:400">${esc(e.type)}: ${esc(e.message)}</span></div>${e.source ? `<div class="src">${esc(e.source)}</div>` : ""}${e.hint ? `<div class="hint">${esc(e.hint)}</div>` : ""}</div>`));
+  }
+  if (!box.children.length && !r.check) box.appendChild(h(`<div class="out"><div class="note">Exécuté, sans rien à afficher.</div></div>`));
+}
+const loadErr = e => `<div class="out err"><div class="head">Python n'a pas pu se charger</div><div class="hint">Vérifie ta connexion internet puis réessaie. Détail : ${esc(e.message || e)}</div></div>`;
+
+/* ================================================================ cellules */
+let execCount = 0;
+function makeLessonCell(code, nsKey) {
+  const cell = h(`<div class="cell"><div class="gut">In [ ]:</div><div class="cellbox"></div><div class="output" aria-live="polite"></div></div>`);
+  const box = $(".cellbox", cell), out = $(".output", cell), gut = $(".gut", cell);
+  const ed = makeEditor(code, null, () => go());
+  box.appendChild(ed.el);
+  const bar = h(`<div class="cellbar"><button class="btn small run" type="button">▶ Exécuter</button><button class="btn small ghost" type="button" data-a="reset">Réinitialiser</button><button class="btn small ghost" type="button" data-a="copy">Copier</button><span class="grow"></span><span class="lang">python</span></div>`);
+  box.appendChild(bar);
+  const btn = $(".run", bar);
+  async function go() {
+    btn.disabled = true;
+    out.innerHTML = `<div class="out"><div class="loading"><span class="spin"></span><span class="st">Exécution…</span></div></div>`;
+    const st = $(".st", out);
+    try {
+      const r = await runPython(ed.get(), nsKey, null, false, m => { if (st) st.textContent = m; });
+      execCount++; gut.textContent = `In [${execCount}]:`;
+      renderOutput(out, r); save();
+    } catch (e) { out.innerHTML = loadErr(e); }
+    btn.disabled = false;
+  }
+  btn.addEventListener("click", go);
+  $('[data-a="reset"]', bar).addEventListener("click", () => { ed.set(code); out.innerHTML = ""; });
+  $('[data-a="copy"]', bar).addEventListener("click", ev => copyText(ed.get(), ev.currentTarget));
+  return cell;
+}
+function makeStaticCell(code, lang) {
+  const label = { pycode: "python · à exécuter sur ton ordinateur", bash: "terminal", markdown: "markdown", sql: "sql", yaml: "yaml", json: "json" }[lang] || lang;
+  const hl = lang === "pycode" ? "python" : lang;
+  const cell = h(`<div class="cell"><div class="gut">${lang === "bash" ? "$" : ""}</div><div class="cellbox static"><pre><code>${highlight(code, hl)}</code></pre><div class="cellbar"><button class="btn small ghost" type="button">Copier</button><span class="grow"></span><span class="lang">${esc(label)}</span></div></div></div>`);
+  $("button", cell).addEventListener("click", ev => copyText(code, ev.currentTarget));
+  return cell;
+}
+async function copyText(txt, btn) {
+  try { await navigator.clipboard.writeText(txt); const o = btn.textContent; btn.textContent = "Copié"; setTimeout(() => btn.textContent = o, 1400); }
+  catch (e) { btn.textContent = "Copie impossible"; }
+}
+function enhanceProse(root, nsKey) {
+  for (const code of $$("pre > code", root)) {
+    const lang = ((code.className || "").match(/language-(\w+)/) || [])[1] || "text";
+    const src = code.textContent.replace(/\n$/, "");
+    code.parentElement.replaceWith(lang === "python" ? makeLessonCell(src, nsKey) : makeStaticCell(src, lang));
+  }
+  for (const t of $$("table", root)) { if (!t.parentElement.classList.contains("table-wrap")) { const w = h(`<div class="table-wrap"></div>`); t.replaceWith(w); w.appendChild(t); } }
+  for (const v of $$(".viz", root)) mountViz(v, v.dataset.viz);
+}
+
+/* ================================================================ exercices */
+function makeExercise(ex, n, item) {
+  const card = h(`<div class="card exo" id="${ex.id}">
+    <div class="exo-h"><span class="num">Exercice ${n}</span><h3>${esc(ex.title)}</h3><span class="status">À faire</span></div>
+    <div class="prompt">${ex.prompt}</div>
+    <div class="cell"><div class="gut"></div><div class="cellbox"></div><div class="output" aria-live="polite"></div></div>
+    <div class="more"></div></div>`);
+  const status = $(".status", card);
+  const setStatus = () => { const ok = !!S.ex[ex.id]; status.textContent = ok ? "Réussi" : "À faire"; status.classList.toggle("ok", ok); };
+  setStatus();
+  const box = $(".cellbox", card), out = $(".output", card), more = $(".more", card);
+  const ed = makeEditor(CODE[ex.id] ?? ex.starter, v => saveCode(ex.id, v), () => go());
+  box.appendChild(ed.el);
+  const bar = h(`<div class="cellbar">
+    <button class="btn small primary" type="button" data-a="check">▶ Vérifier</button>
+    <button class="btn small ghost" type="button" data-a="hint">Indice</button>
+    <button class="btn small ghost needs-sample" type="button" data-a="tutor">Demander au tuteur</button>
+    <button class="btn small ghost" type="button" data-a="sol">Solution</button>
+    <span class="grow"></span>
+    <button class="btn small ghost" type="button" data-a="reset" title="Revenir au code de départ">Repartir de zéro</button></div>`);
+  box.appendChild(bar);
+  const checkBtn = $('[data-a="check"]', bar);
+  let last = null, tries = 0;
+  async function go() {
+    checkBtn.disabled = true;
+    out.innerHTML = `<div class="out"><div class="loading"><span class="spin"></span><span class="st">Exécution…</span></div></div>`;
+    const st = $(".st", out);
+    try {
+      const code = ed.get(); saveCode(ex.id, code);
+      const r = await runPython(code, ex.id, ex.check, true, m => { if (st) st.textContent = m; });
+      last = { code, r }; tries++;
+      renderOutput(out, r);
+      const c = r.check || { ok: false, message: "Vérification impossible." };
+      out.appendChild(h(`<div class="verdict ${c.ok ? "ok" : "no"}">${c.ok ? "✓ " : "✗ "}${esc(c.message)}</div>`));
+      if (c.ok && !S.ex[ex.id]) { S.ex[ex.id] = true; save(); setStatus(); maybeAutoDone(item); } else save();
+    } catch (e) { out.innerHTML = loadErr(e); }
+    checkBtn.disabled = false;
+  }
+  checkBtn.addEventListener("click", go);
+  $('[data-a="hint"]', bar).addEventListener("click", () => toggle("hint", () => `<div class="reveal"><b>Indice.</b> ${esc(ex.hint)}</div>`));
+  $('[data-a="sol"]', bar).addEventListener("click", () => {
+    if (!S.ex[ex.id] && tries < 2 && !more.querySelector(".confirm")) {
+      more.innerHTML = `<div class="reveal confirm">Essaie encore au moins une fois avant de regarder : c'est en cherchant qu'on apprend. <button class="btn small" type="button">Afficher quand même</button></div>`;
+      $("button", more).addEventListener("click", showSol); return;
+    }
+    showSol();
+  });
+  function showSol() {
+    more.innerHTML = "";
+    const r = h(`<div class="reveal"><b>Une solution possible</b><pre><code>${highlight(ex.solution)}</code></pre><button class="btn small" type="button">Copier dans l'éditeur</button></div>`);
+    $("button", r).addEventListener("click", () => { ed.set(ex.solution); more.innerHTML = ""; });
+    more.appendChild(r);
+  }
+  function toggle(kind, mk) { if (more.dataset.k === kind) { more.innerHTML = ""; more.dataset.k = ""; } else { more.innerHTML = mk(); more.dataset.k = kind; } }
+  $('[data-a="reset"]', bar).addEventListener("click", () => { ed.set(ex.starter); out.innerHTML = ""; });
+  $('[data-a="tutor"]', bar).addEventListener("click", () => exerciseTutor(ex, ed.get(), last, more));
+  return card;
+}
+
+/* ================================================================ tuteur (Claude) */
+const caps = { sample: null, tts: null };
+function mdLite(s) {
+  const parts = String(s).split(/```(?:\w+)?\n?([\s\S]*?)```/g);
+  let html = "";
+  parts.forEach((p, i) => {
+    if (i % 2 === 1) { html += `<pre><code>${esc(p.replace(/\n$/, ""))}</code></pre>`; return; }
+    for (const b of p.split(/\n{2,}/).map(b => b.trim()).filter(Boolean)) {
+      const t = esc(b).replace(/`([^`]+)`/g, "<code>$1</code>").replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>");
+      if (/^(- |\* |\d+\. )/m.test(b)) {
+        const items = t.split(/\n/).map(l => `<li>${l.replace(/^(- |\* |\d+\. )/, "")}</li>`).join("");
+        html += /^\d+\. /.test(b) ? `<ol>${items}</ol>` : `<ul>${items}</ul>`;
+      } else html += `<p>${t.replace(/\n/g, "<br>")}</p>`;
+    }
+  });
+  return html;
+}
+const TUTOR_ROLE = "Tu es le tuteur d'une plateforme de préparation pour un adulte francophone en reconversion, inscrit aux formations FullStack IA puis Lead AI de Jedha. Il vise un très haut niveau. Tu le tutoies, tu es chaleureux, exigeant, précis et bref. Tu réponds en français.";
+async function askClaude(input, target) {
+  if (!caps.sample) return;
+  target.innerHTML = `<div class="loading"><span class="spin"></span>Le tuteur réfléchit…</div>`;
+  try {
+    const r = await caps.sample(input, { cache: false, onText: ({ text }) => { target.innerHTML = mdLite(text); } });
+    target.innerHTML = mdLite(r.text);
+    return r.text;
+  } catch (e) {
+    if (e && e.code === "not_granted") { document.body.classList.remove("has-sample"); target.innerHTML = "<p>Le tuteur n'est pas disponible ici.</p>"; }
+    else if (e && e.code === "rate_limited") target.innerHTML = "<p>Le tuteur reçoit trop de questions en ce moment. Réessaie dans une minute.</p>";
+    else target.innerHTML = "<p>Le tuteur n'a pas pu répondre. Réessaie dans un instant.</p>";
+    if (e && e.text) target.innerHTML = mdLite(e.text);
+  }
+}
+function exerciseTutor(ex, code, last, more) {
+  more.dataset.k = "tutor";
+  more.innerHTML = `<div class="reveal"><b>Le tuteur</b><div class="msg ai help"></div></div>`;
+  const tmp = document.createElement("div"); tmp.innerHTML = ex.prompt;
+  let res = "Le code n'a pas encore été exécuté.";
+  if (last && last.code === code) {
+    const r = last.r;
+    res = [r.stdout && `Sortie :\n${r.stdout.slice(0, 1500)}`, r.error && `Erreur : ${r.error.type}: ${r.error.message} (ligne ${r.error.line})`, r.check && `Vérification : ${r.check.message}`].filter(Boolean).join("\n") || "Exécuté sans sortie.";
+  }
+  askClaude(`${TUTOR_ROLE}
+
+L'apprenant bloque sur cet exercice.
+Titre : ${ex.title}
+Consigne : ${tmp.textContent}
+
+Son code actuel :
+\`\`\`python
+${code}
+\`\`\`
+
+Résultat de sa dernière exécution :
+${res}
+
+Pour référence (NE LA DONNE PAS) : solution attendue :
+\`\`\`python
+${ex.solution}
+\`\`\`
+
+Aide-le à trouver lui-même. Dis ce qui ne va pas dans SON code (ou ce qu'il reste à faire), explique la notion en jeu, et donne un indice concret pour l'étape suivante. Ne donne pas la solution complète ; un extrait d'une ou deux lignes au maximum. 120 mots maximum.`, $(".help", more));
+}
+function lessonTutor(it) {
+  const box = h(`<section class="card tutor" aria-label="Tuteur">
+    <h3>Une question sur cette leçon ?</h3>
+    <p class="muted" style="margin:0;font-size:14px">Le tuteur connaît le contenu de la leçon. Demande-lui une autre explication, un exemple, une question d'entretien ou un exercice plus difficile.</p>
+    <div class="thread"></div>
+    <form class="ask"><label class="sr" for="ask-${it.id}">Ta question</label><textarea id="ask-${it.id}" rows="2" placeholder="Par exemple : donne-moi un exercice plus difficile sur ce sujet"></textarea><button class="btn primary" type="submit">Demander</button></form>
+  </section>`);
+  const thread = $(".thread", box), ta = $("textarea", box);
+  const msgs = [];
+  const ctx = `${TUTOR_ROLE}\n\nVoici la leçon que l'apprenant étudie, « ${it.title} » :\n\n${(it.text || "").slice(0, 7000)}\n\nRéponds à ses questions en t'appuyant sur cette leçon. 150 mots maximum, avec un court exemple de code si c'est utile.`;
+  $("form", box).addEventListener("submit", async e => {
+    e.preventDefault();
+    const q = ta.value.trim(); if (!q) return;
+    ta.value = "";
+    thread.appendChild(h(`<div class="msg me">${esc(q)}</div>`));
+    const a = h(`<div class="msg ai"></div>`); thread.appendChild(a);
+    msgs.push({ role: "user", content: msgs.length ? q : `${ctx}\n\nQuestion : ${q}` });
+    const txt = await askClaude(msgs.slice(), a);
+    if (txt) msgs.push({ role: "assistant", content: txt }); else msgs.pop();
+    save();
+  });
+  ta.addEventListener("keydown", e => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); $("form", box).requestSubmit(); } });
+  return box;
+}
+
+/* ================================================================ lecture audio */
+function speakableLines(it) {
+  const t = (it.text || "").replace(/^#+\s*/gm, "").replace(/\*\*|`|^>\s*/gm, "").replace(/\|/g, " ").replace(/^- /gm, "").replace(/\[(.*?)\]\(.*?\)/g, "$1");
+  const paras = [it.title + ".", ...t.split(/\n{2,}/).map(p => p.replace(/\n/g, " ").trim()).filter(p => p && !/^[-\s|:]+$/.test(p))];
+  const lines = []; let cur = "";
+  for (const p of paras) { if ((cur + " " + p).length > 1800) { if (cur) lines.push(cur); cur = p.slice(0, 1800); } else cur = cur ? cur + " " + p : p; }
+  if (cur) lines.push(cur);
+  return lines.map(text => ({ text, language: "fr" }));
+}
+function listenButton(it) {
+  const b = h(`<button class="btn small needs-tts" type="button">🔊 Écouter la leçon</button>`);
+  let playing = false;
+  b.addEventListener("click", async () => {
+    if (!caps.tts) return;
+    if (playing) { caps.tts.stop(); return; }
+    playing = true; b.textContent = "■ Arrêter la lecture";
+    try { await caps.tts.speak(speakableLines(it)); } catch (e) { if (e && e.code === "not_granted") document.body.classList.remove("has-tts"); }
+    playing = false; b.textContent = "🔊 Écouter la leçon";
+  });
+  return b;
+}
+
+/* ================================================================ vues */
+const app = () => $("#app");
+function setTop(back) {
+  const b = $("#back");
+  if (back) { b.hidden = false; b.href = back.href; $("span", b).textContent = back.label; $("#brand").hidden = true; }
+  else { b.hidden = true; $("#brand").hidden = false; }
+}
+const dot = st => `<span class="dot ${st}" aria-hidden="true"></span>`;
+function label(id) { const it = ITEM(id); return it ? it.title : id; }
+function meta(id) {
+  const it = ITEM(id); if (!it) return "";
+  if (it.kind === "quiz") { const s = S.quiz[id]; return s != null ? `${s}/${it.questions.length}` : `${it.questions.length} questions`; }
+  const n = (it.exercises || []).length;
+  return n ? `${it.exercises.filter(e => S.ex[e.id]).length}/${n} exos` : `${it.minutes || 30} min`;
+}
+const kindLabel = id => { const it = ITEM(id); return it.kind === "quiz" ? "Quiz" : it.kind === "project" ? "Projet" : "Leçon"; };
+const shortLabel = id => { const l = label(id); return l.length > 34 ? l.slice(0, 32) + "…" : l; };
+const itemRow = id => `<li><a href="#${id}">${dot(itemState(id))}<span>${esc(label(id))}</span><span class="meta tab">${esc(meta(id))}</span></a></li>`;
+
+function viewHome() {
+  setTop(null);
+  const g = globalStats();
+  const nx = nextItem();
+  const allLessons = Object.values(C.items);
+  const nLessons = allLessons.filter(i => S.done[i.id]).length;
+  const nEx = allLessons.reduce((a, i) => a + i.exercises.filter(e => S.ex[e.id]).length, 0);
+  const totEx = allLessons.reduce((a, i) => a + i.exercises.length, 0);
+  const qs = Object.keys(C.quizzes); const nQuiz = qs.filter(quizPassed).length;
+  let jtxt = "";
+  if (S.start) {
+    const d = Math.ceil((new Date(S.start + "T09:00:00") - new Date()) / 86400000);
+    jtxt = d > 0 ? `<b class="tab">J-${d}</b> avant le premier jour` : d === 0 ? `<b>C'est aujourd'hui !</b>` : `<b>La formation a commencé</b>`;
+  }
+  const cw = currentWeek();
+  const T = C.tracks.find(t => t.id === S.track) || C.tracks[0];
+  const el = h(`<div>
+    <section class="hero">
+      <div>
+        <div class="eyebrow">Essentials → FullStack IA → Lead AI · ${C.plan.length} semaines de préparation</div>
+        <h1>Arrive chez Jedha <span class="mark">avec une longueur d'avance</span>.</h1>
+        <p class="lede">La plateforme suit les modules officiels de tes programmes. Chaque leçon s'exécute ici même, chaque exercice est corrigé automatiquement, et un tuteur IA t'accompagne.</p>
+        <div class="jday"><label for="start">Début de la formation</label><input type="date" id="start" value="${S.start || ""}"> <span>${jtxt}</span></div>
+      </div>
+      <div class="card resume">
+        <div><div class="eyebrow">Progression globale</div><div class="big tab">${g}<small> %</small></div></div>
+        <div><div class="epochs" style="grid-template-columns:repeat(${C.tracks.length},1fr)">${C.tracks.map(t => `<div><i style="width:${trackStats(t).p}%"></i></div>`).join("")}</div>
+        <div class="epochs-l" style="grid-template-columns:repeat(${C.tracks.length},1fr)">${C.tracks.map(t => `<span>${esc(t.nom)} · ${trackStats(t).p} %</span>`).join("")}</div></div>
+        ${nx ? `<a class="continue" href="#${nx}"><span class="eyebrow">${g === 0 ? "Commencer" : "Reprendre"} · ${esc(MOD[HOME[nx]].M.titre)}</span><b>${esc(label(nx))}</b><span class="muted" style="font-size:13px">${esc(kindLabel(nx))} · ${esc(meta(nx))} →</span></a>`
+              : `<div class="continue"><b>Tout le contenu publié est terminé. Bravo !</b><span class="muted">La prochaine vague arrive.</span></div>`}
+      </div>
+    </section>
+    <section class="stats">
+      <div class="card stat"><b class="tab">${nLessons}/${allLessons.length}</b><span>leçons et projets terminés</span></div>
+      <div class="card stat"><b class="tab">${nEx}/${totEx}</b><span>exercices réussis</span></div>
+      <div class="card stat"><b class="tab">${nQuiz}/${qs.length}</b><span>quiz réussis (75 % ou plus)</span></div>
+      <div class="card stat"><b class="tab">${S.days.length}</b><span>jours de pratique · série de ${streak()}</span></div>
+    </section>
+    <div class="section-h"><h2>Ton plan de ${C.plan.length} semaines</h2><p>20 h et plus par semaine : Essentials d'abord, puis le FullStack</p></div>
+    <div class="plan" role="list" style="--n:${C.plan.length}">${C.plan.map(w => { const s = statsOf(weekIds(w)); return `<button class="wk ${w.semaine === cw ? "cur" : ""}" type="button" data-w="${w.semaine}" role="listitem"><span class="n">S${w.semaine}</span><span class="t">${esc(w.titre)}</span><div class="bar"><i style="width:${s.p}%"></i></div></button>`; }).join("")}</div>
+    <div class="card wkdetail"></div>
+    <div class="section-h"><h2>Les programmes</h2><p>Les modules officiels, et ce que la plateforme couvre déjà</p></div>
+    <div class="tabs" role="tablist">${C.tracks.map(t => `<button role="tab" type="button" data-t="${t.id}" aria-selected="${t.id === T.id}">${esc(t.nom)}<span class="tag">${t.inscrit ? "inscrit" : "bonus"}</span></button>`).join("")}</div>
+    <p class="muted" style="margin:0 0 12px">${esc(T.intro)}</p>
+    <section class="modules">${T.modules.map(moduleCard).join("")}</section>
+    <section class="extras">
+      <a class="card" href="#jour-j"><span class="eyebrow">Checklist</span><b>Prêt pour le jour J ?</b><span class="muted" style="font-size:14px">${C.jourj.filter((_, i) => S.tasks["jj-" + i]).length}/${C.jourj.length} points validés</span></a>
+      <a class="card" href="#ressources"><span class="eyebrow">Pour aller plus loin</span><b>Ressources gratuites</b><span class="muted" style="font-size:14px">Cours, vidéos et documentations, module par module</span></a>
+    </section>
+    <p class="sync" id="sync"></p>
+  </div>`);
+  app().replaceChildren(el);
+  setSync(store.mode);
+  const showWeek = n => {
+    const w = C.plan.find(x => x.semaine === n);
+    const ids = weekIds(w);
+    const s = statsOf(ids);
+    $(".wkdetail", el).innerHTML = `<div class="eyebrow">Semaine ${w.semaine} · ${esc(w.heures)} · ${s.p} % fait</div><h3>${esc(w.titre)}</h3>
+      <ul>${w.modules.map(mid => { const { M, T } = MOD[mid]; const cv = coverage(M); return `<li><a href="#m-${mid}">${esc(M.titre)}</a> <span class="muted" style="font-size:13px">· ${esc(T.nom)} · ${cv.p} % du module préparé ici</span></li>`; }).join("")}</ul>
+      <div class="lesson-tools"><button class="btn small" type="button" data-cur="${n}">${S.week === n ? "✓ Ma semaine en cours" : "Définir comme ma semaine en cours"}</button></div>`;
+    $$(".wk", el).forEach(b => b.classList.toggle("cur", +b.dataset.w === n));
+    $("[data-cur]", el).addEventListener("click", () => { S.week = S.week === n ? null : n; save(); showWeek(n); });
+  };
+  showWeek(cw);
+  $$(".wk", el).forEach(b => b.addEventListener("click", () => showWeek(+b.dataset.w)));
+  $$(".tabs button", el).forEach(b => b.addEventListener("click", () => { S.track = b.dataset.t; save(); render(); }));
+  $("#start", el).addEventListener("change", e => { S.start = e.target.value || null; save(); render(); });
+}
+function moduleCard(M, i) {
+  const s = moduleStats(M), cv = coverage(M);
+  return `<a class="card mod" href="#m-${M.id}">
+    <span class="num"><span>${M.jours ? `${M.jours} jour${M.jours > 1 ? "s" : ""} chez Jedha` : "Avant la formation"}</span><span>S${M.semaine}</span></span>
+    <b>${esc(M.titre)}</b><span class="obj">${esc(M.objectif)}</span>
+    <div class="meters">
+      <div class="row"><span>Préparé ici</span><span>${cv.c}/${cv.n} sections</span></div>
+      <div class="bar cov"><i style="width:${cv.p}%"></i></div>
+      <div class="row"><span>Ta progression</span><span>${s.total ? s.p + " %" : "—"}</span></div>
+      <div class="bar"><i style="width:${s.p}%"></i></div>
+    </div></a>`;
+}
+function viewModule(mid) {
+  const { M, T } = MOD[mid];
+  setTop({ href: "#accueil", label: "Accueil" });
+  const s = moduleStats(M), cv = coverage(M);
+  const el = h(`<div class="read">
+    <div class="pagehead"><div class="crumbs"><a href="#accueil">Accueil</a><span>/</span><span>${esc(T.nom)}</span></div>
+      <h1>${esc(M.titre)}</h1><p>${esc(M.objectif)}</p>
+      <div class="lesson-tools"><span class="badge jedha">${M.jours ? `${M.jours} jour${M.jours > 1 ? "s" : ""} chez Jedha` : "Avant la formation"}</span><span class="badge">Semaine ${M.semaine} du plan</span><span class="badge ok">${cv.c}/${cv.n} sections préparées ici</span>${s.total ? `<span class="badge">${s.p} % fait</span>` : ""}</div>
+    </div>
+    <h2 class="section-t" style="margin-top:8px">Le programme, section par section</h2>
+    <p class="muted" style="margin:0 0 6px">Chaque bloc correspond à une section du programme Jedha. En dessous, les leçons qui t'y préparent.</p>
+    ${M.sections.map(sec => `<div class="card sec"><div class="sec-h"><b>${esc(sec.titre)}</b>${sec.lecons.length ? `<span class="badge ok">Préparé</span>` : `<span class="badge soon">Prochaine vague</span>`}${sec.local ? `<span class="badge local">Sur ton ordinateur</span>` : ""}</div>
+      ${sec.lecons.length ? `<ul class="items">${sec.lecons.map(itemRow).join("")}</ul>` : `<p class="soon-txt">Cette section sera ajoutée dans une prochaine vague de contenu.${sec.local ? " Elle se pratiquera surtout sur ton ordinateur, avec des guides pas à pas." : ""}</p>`}</div>`).join("")}
+    ${M.projets.length || M.quiz.length ? `<h2 class="section-t">Projets et quiz</h2><nav class="card list" style="padding:6px">${[...M.projets, ...M.quiz].map(id => `<a href="#${id}">${dot(itemState(id))}<span><span class="k">${kindLabel(id)}</span><br><b>${esc(label(id))}</b></span><span class="meta muted tab" style="font-size:13px">${esc(meta(id))}</span></a>`).join("")}</nav>` : ""}
+  </div>`);
+  app().replaceChildren(el);
+}
+function setDoneBtn(b, it) { const on = !!S.done[it.id]; b.classList.toggle("on", on); b.textContent = on ? "✓ Terminé" : "Marquer comme terminé"; }
+function navLinks(id) {
+  const pos = ORDER.indexOf(id), prev = ORDER[pos - 1], next = ORDER[pos + 1];
+  return { prev, next };
+}
+function viewLesson(it) {
+  const { M, T } = MOD[HOME[it.id]];
+  setTop({ href: "#m-" + M.id, label: M.titre.length > 26 ? M.titre.slice(0, 24) + "…" : M.titre });
+  const { prev, next } = navLinks(it.id);
+  const el = h(`<article class="read">
+    <div class="pagehead">
+      <div class="crumbs"><a href="#accueil">Accueil</a><span>/</span><a href="#m-${M.id}">${esc(M.titre)}</a><span>/</span><span>${it.kind === "project" ? "Projet" : "Leçon"}</span></div>
+      <h1>${esc(it.title)}</h1>
+      <p class="tab">${it.minutes ? `${it.minutes} min` : ""}${it.exercises.length ? ` · ${it.exercises.length} exercice${it.exercises.length > 1 ? "s" : ""}` : ""}${it.tasks.length ? ` · ${it.tasks.length} action${it.tasks.length > 1 ? "s" : ""} sur ton ordinateur` : ""}</p>
+      <div class="lesson-tools"></div>
+    </div>
+    <div class="prose">${it.body}</div>
+    <div class="tasks-zone"></div><div class="ex-zone"></div><div class="tutor-zone"></div>
+    <div class="foot">
+      ${prev ? `<a class="btn ghost" href="#${prev}">← ${esc(shortLabel(prev))}</a>` : "<span></span>"}
+      <button class="btn done-btn" type="button"></button>
+      ${next ? `<a class="btn primary" href="#${next}">${esc(shortLabel(next))} →</a>` : "<span></span>"}
+    </div></article>`);
+  $(".lesson-tools", el).appendChild(listenButton(it));
+  enhanceProse($(".prose", el), it.id);
+  if (it.tasks.length) {
+    const z = $(".tasks-zone", el);
+    z.appendChild(h(`<h2 class="section-t">À faire sur ton ordinateur</h2>`));
+    const ul = h(`<ul class="card tasks"></ul>`);
+    it.tasks.forEach((t, i) => {
+      const key = `${it.id}-t${i}`;
+      const li = h(`<li><label><input type="checkbox" id="${key}" ${S.tasks[key] ? "checked" : ""}><span>${esc(t)}</span></label></li>`);
+      $("input", li).addEventListener("change", e => { if (e.target.checked) S.tasks[key] = true; else delete S.tasks[key]; save(); });
+      ul.appendChild(li);
+    });
+    z.appendChild(ul);
+  }
+  if (it.exercises.length) {
+    const z = $(".ex-zone", el);
+    z.appendChild(h(`<h2 class="section-t">Exercices</h2>`));
+    z.appendChild(h(`<p class="muted" style="margin:0 0 6px">Écris ton code, puis clique sur Vérifier (ou Ctrl + Entrée). Ton code est sauvegardé automatiquement.</p>`));
+    it.exercises.forEach((ex, i) => z.appendChild(makeExercise(ex, i + 1, it)));
+  }
+  $(".tutor-zone", el).appendChild(lessonTutor(it));
+  const db = $(".done-btn", el);
+  setDoneBtn(db, it);
+  db.addEventListener("click", () => { if (S.done[it.id]) delete S.done[it.id]; else S.done[it.id] = true; save(); setDoneBtn(db, it); });
+  app().replaceChildren(el);
+  if (it.body.includes("language-python") || it.exercises.length) setTimeout(() => ensurePython().catch(() => {}), 600);
+}
+function viewQuiz(q) {
+  const { M } = MOD[HOME[q.id]];
+  setTop({ href: "#m-" + M.id, label: M.titre.length > 26 ? M.titre.slice(0, 24) + "…" : M.titre });
+  const { next } = navLinks(q.id);
+  const n = q.questions.length, need = passMark(q), best = S.quiz[q.id];
+  const el = h(`<div class="read">
+    <div class="pagehead"><div class="crumbs"><a href="#accueil">Accueil</a><span>/</span><a href="#m-${M.id}">${esc(M.titre)}</a><span>/</span><span>Quiz</span></div>
+    <h1>${esc(q.title)}</h1><p>${n} questions. Il faut ${need} bonnes réponses pour le valider.${best != null ? ` Meilleur score : <b class="tab">${best}/${n}</b>.` : ""}</p></div>
+    <form class="quiz">${q.questions.map((x, i) => `<fieldset class="card q" style="border:1px solid var(--line)"><legend class="sr">Question ${i + 1}</legend><h3>${i + 1}. ${esc(x.q)}</h3>${x.options.map((o, j) => `<label><input type="radio" name="q${i}" value="${j}"><span>${esc(o)}</span></label>`).join("")}<div class="exp" hidden></div></fieldset>`).join("")}
+    <div class="score-zone"></div>
+    <div class="foot"><button class="btn primary" type="submit">Valider mes réponses</button><button class="btn ghost" type="button" data-a="again" hidden>Recommencer</button>${next ? `<a class="btn" href="#${next}">${esc(shortLabel(next))} →</a>` : `<a class="btn" href="#jour-j">Checklist du jour J →</a>`}</div>
+    </form></div>`);
+  const form = $("form", el);
+  form.addEventListener("submit", e => {
+    e.preventDefault();
+    let score = 0;
+    q.questions.forEach((x, i) => {
+      const fs = $$("fieldset", form)[i];
+      const v = $(`input[name="q${i}"]:checked`, fs);
+      const ans = v ? +v.value : -1;
+      if (ans === x.answer) score++;
+      $$("label", fs).forEach((lb, j) => { lb.classList.toggle("right", j === x.answer); lb.classList.toggle("wrong", j === ans && ans !== x.answer); });
+      $$("input", fs).forEach(z => z.disabled = true);
+      const exp = $(".exp", fs); exp.hidden = false; exp.textContent = (ans === x.answer ? "Bonne réponse. " : ans < 0 ? "Pas de réponse. " : "Raté. ") + x.explain;
+    });
+    S.quiz[q.id] = Math.max(S.quiz[q.id] ?? 0, score); save();
+    $(".score-zone", form).replaceChildren(h(`<div class="card score"><b class="tab">${score}/${n}</b><span>${score >= need ? "Quiz validé. Bravo !" : `Relis les explications, puis retente ta chance : il faut ${need}/${n}.`}</span></div>`));
+    $('[type="submit"]', form).hidden = true; $('[data-a="again"]', form).hidden = false;
+    $(".score-zone", form).scrollIntoView({ behavior: "smooth", block: "center" });
+  });
+  $('[data-a="again"]', form).addEventListener("click", () => viewQuiz(q));
+  app().replaceChildren(el);
+}
+function viewJourJ() {
+  setTop({ href: "#accueil", label: "Accueil" });
+  const el = h(`<div class="read"><div class="pagehead"><div class="eyebrow">Checklist</div><h1>Prêt pour le jour J ?</h1><p>Coche chaque point quand il est vrai. Objectif : tout cocher avant ton premier jour chez Jedha.</p></div><ul class="card tasks"></ul></div>`);
+  const ul = $("ul", el);
+  C.jourj.forEach((t, i) => {
+    const key = "jj-" + i;
+    const li = h(`<li><label><input type="checkbox" id="${key}" ${S.tasks[key] ? "checked" : ""}><span>${esc(t)}</span></label></li>`);
+    $("input", li).addEventListener("change", e => { if (e.target.checked) S.tasks[key] = true; else delete S.tasks[key]; save(); });
+    ul.appendChild(li);
+  });
+  app().replaceChildren(el);
+}
+function viewResources() {
+  setTop({ href: "#accueil", label: "Accueil" });
+  const el = h(`<div class="read"><div class="pagehead"><div class="eyebrow">Pour aller plus loin</div><h1>Ressources gratuites</h1><p>Pour approfondir une notion, ou la voir expliquée autrement.</p></div>
+    <div class="table-wrap"><table><thead><tr><th>Ressource</th><th>Module</th><th>Langue</th><th>Pour quoi faire</th></tr></thead><tbody>
+    ${C.resources.map(r => `<tr><td><a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.name)}</a></td><td>${esc(r.module)}</td><td>${esc(r.lang)}</td><td>${esc(r.why)}</td></tr>`).join("")}
+    </tbody></table></div>
+    <p class="muted" style="font-size:14px">Le glossaire anglais-français se trouve dans la leçon <a href="#l-4-6">L'anglais technique</a>.</p></div>`);
+  app().replaceChildren(el);
+}
+
+/* ================================================================ routeur */
+const route = () => (location.hash || "#accueil").slice(1) || "accueil";
+function render() {
+  if (!C) return;
+  const id = route();
+  updateGlobal();
+  if (id.startsWith("m-") && MOD[id.slice(2)]) return viewModule(id.slice(2));
+  if (C.quizzes[id] && HOME[id]) return viewQuiz(C.quizzes[id]);
+  if (C.items[id] && HOME[id]) return viewLesson(C.items[id]);
+  if (id === "jour-j") return viewJourJ();
+  if (id === "ressources") return viewResources();
+  return viewHome();
+}
+let lastRoute = null;
+window.addEventListener("hashchange", () => { const r = route(); if (r !== lastRoute) { lastRoute = r; render(); window.scrollTo(0, 0); } });
+
+/* ================================================================ démarrage */
+(async function boot() {
+  loadLocal();
+  try { C = await (await fetch("content.json")).json(); }
+  catch (e) { app().innerHTML = `<div class="boot">Le contenu n'a pas pu se charger. Recharge la page.</div>`; return; }
+  indexContent();
+  lastRoute = route();
+  render();
+  connectStore();
+  if (window.claude && typeof window.claude.use === "function") {
+    window.claude.use("sample").then(s => { if (s) { caps.sample = s; document.body.classList.add("has-sample"); } }).catch(() => {});
+    window.plateformeLLMDispo = () => !!caps.sample;
+    window.plateformeLLM = async msgs => {
+      if (!caps.sample) throw new Error("Aucun LLM disponible sur cet appareil.");
+      const arr = Array.from(msgs).map(m => ({ role: m.role, content: String(m.content) }));
+      const r = await caps.sample(arr, { cache: false });
+      return r.text;
+    };
+    window.claude.use("tts").then(t => { if (t) { caps.tts = t; document.body.classList.add("has-tts"); } }).catch(() => {});
+  }
+})();
+
+</script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+# Pour la formation et les notebooks
+jupyter
+numpy
+pandas
+scikit-learn
+plotly
+matplotlib
+# Pour construire la plateforme web
+markdown

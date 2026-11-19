@@ -8,8 +8,8 @@
 | --- | --- |
 | `content/parcours.py` | La carte des 3 programmes Jedha : modules, sections officielles, leçons qui les couvrent, plan de 11 semaines |
 | `content/w1.py` … `w4.py` | Les 25 premières leçons (format `WEEK`) |
-| `content/f1_poo.py`, `f3_infra.py`, `e_genai.py`, `f4_ml.py`, `f5_dl.py`, `f6_gen.py`, `f7_adapt.py`, `f8_mlops.py`, `f10_aieng.py` | Les leçons des vagues 1 à 6 (format `LESSONS`, `PROJECTS`, `QUIZZES`) |
-| `labs/` | `brewly` (base SQLite), `fakeapi` (fausse API), `cloudsync` (base de connaissances RAG), `immo` (ventes d'appartements pour le ML), `paiements` (transactions et fraudes), `minifast` (imitation de FastAPI avec TestClient), `llm` (appel d'un vrai LLM depuis Python, ou réponse simulée hors plateforme) |
+| `content/f1_poo.py`, `f3_infra.py`, `e_genai.py`, `f4_ml.py`, `f5_dl.py`, `f6_gen.py`, `f7_adapt.py`, `f8_mlops.py`, `f10_aieng.py`, `f11_carriere.py`, `l_infra.py`, `l_ops.py` | Les leçons des vagues 1 à 7 (format `LESSONS`, `PROJECTS`, `QUIZZES`) |
+| `labs/` | `brewly` (base SQLite), `fakeapi` (fausse API), `cloudsync` (base de connaissances RAG), `immo` (ventes d'appartements pour le ML), `paiements` (transactions et fraudes, avec dérive mensuelle via `mois=`), `minifast` (imitation de FastAPI avec TestClient), `llm` (appel d'un vrai LLM depuis Python, ou réponse simulée hors plateforme) |
 | `runner.py`, `pxshim.py` | Exécution des cellules et version simplifiée de plotly.express (navigateur) |
 | `web/src/` | L'application : `app.js` (vues, progression, Pyodide, tuteur), `viz.js` (animations), CSS |
 | `web/assemble.py` | Assemble `web/src/` en un seul `web/index.html` |
@@ -39,7 +39,6 @@
 4. Deep learning : neurone et activations, perceptron, rétropropagation, PyTorch, convolutions, embeddings, MLP from scratch.
 5. Architectures génératives et adaptation (F6, F7) : attention, Transformer en NumPy, tokenisation, Hugging Face, CLIP, diffusion, projet mini-GPT avec cache KV, LoRA et QLoRA, apprentissage par renforcement, RLHF et DPO.
 6. Ingénierie ML et IA (F8, F9, F10) : terminal, Streamlit, Docker, EC2, MLflow, asynchrone, FastAPI (avec `minifast`), projet anti-fraude, LangChain et LangGraph, observabilité, vLLM, MCP.
+7. Lead AI (L1 à L6) et coaching de carrière (F11) : gouvernance et qualité des données, catalogue et lignage, GPU, Kubernetes et Helm, Ray et ZeRO, Terraform et réseau AWS, Airflow, tests et mutation, CI/CD, entraînement continu et canary, dérive (PSI, KS), évaluation continue des RAG, GraphRAG, garde-fous, Demo Day, projet MLOps de surveillance, CV et entretiens.
 
-## Prochaines vagues prévues
-
-7. Lead : gouvernance, tests et CI/CD, surveillance de la dérive, LLMOps, sécurité.
+Toutes les sections des trois programmes sont couvertes. Les évolutions possibles : approfondir une section, ajouter des projets, ou mettre à jour le contenu quand Jedha fait évoluer ses programmes.

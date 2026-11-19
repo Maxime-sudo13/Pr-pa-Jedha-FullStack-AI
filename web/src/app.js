@@ -532,7 +532,7 @@ function viewHome() {
         <div><div class="epochs" style="grid-template-columns:repeat(${C.tracks.length},1fr)">${C.tracks.map(t => `<div><i style="width:${trackStats(t).p}%"></i></div>`).join("")}</div>
         <div class="epochs-l" style="grid-template-columns:repeat(${C.tracks.length},1fr)">${C.tracks.map(t => `<span title="${esc(t.nom)}">${esc(t.nom.split(" ")[0])} ${trackStats(t).p} %</span>`).join("")}</div></div>
         ${nx ? `<a class="continue" href="#${nx}"><span class="eyebrow">${g === 0 ? "Commencer" : "Reprendre"} · ${esc(MOD[HOME[nx]].M.titre)}</span><b>${esc(label(nx))}</b><span class="muted" style="font-size:13px">${esc(kindLabel(nx))} · ${esc(meta(nx))} →</span></a>`
-              : `<div class="continue"><b>Tout le contenu publié est terminé. Bravo !</b><span class="muted">La prochaine vague arrive.</span></div>`}
+              : `<div class="continue"><b>Tu as tout terminé. Bravo !</b><span class="muted">Refais les quiz, peaufine tes projets, et prépare ton Demo Day.</span></div>`}
       </div>
     </section>
     <section class="stats">

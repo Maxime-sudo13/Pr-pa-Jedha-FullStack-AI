@@ -16,7 +16,7 @@ jobs:
         with: { python-version: "3.12" }
       - uses: actions/setup-node@v4
         with: { node-version: "20" }
-      - run: pip install markdown numpy pandas scikit-learn
+      - run: pip install markdown numpy pandas scikit-learn scipy matplotlib pydantic
       - run: cd tools && npm install
       - run: python web/assemble.py
       - run: python build.py

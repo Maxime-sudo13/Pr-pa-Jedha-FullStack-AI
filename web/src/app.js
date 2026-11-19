@@ -183,11 +183,11 @@ function ensurePython(onStatus) {
 async function runPython(code, key, check, fresh, onStatus) {
   await ensurePython(onStatus);
   const all = code + "\n" + (check || "");
-  const LOCAL = /^\s*(?:import|from)\s+(plotly|fakeapi|brewly|llm|cloudsync|immo|pxshim)\b.*$/gm;
+  const LOCAL = /^\s*(?:import|from)\s+(plotly|fakeapi|brewly|llm|cloudsync|immo|paiements|minifast|pxshim)\b.*$/gm;
   const scan = all.replace(LOCAL, "");
   let needs = "";
   if (/\bbrewly\b/.test(all)) needs += "import sqlite3\n";
-  if (/\bimmo\b/.test(all)) needs += "import numpy\nimport pandas\n";
+  if (/\b(immo|paiements)\b/.test(all)) needs += "import numpy\nimport pandas\n";
   try { onStatus && onStatus("Chargement des bibliothèques nécessaires…"); await py.loadPackagesFromImports(needs + scan); } catch (e) {}
   if (needs) { try { await py.loadPackage("sqlite3"); } catch (e) {} }
   onStatus && onStatus("Exécution…");

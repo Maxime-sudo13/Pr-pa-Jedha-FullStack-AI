@@ -3099,3 +3099,869 @@ ref_c, ref_r = np.array([-12.0, -30.0]), np.array([-11.0, -28.0])
 print("au départ (modèle = référence) :", perte_dpo(ref_c, ref_r, ref_c, ref_r))
 print("après entraînement :", perte_dpo(ref_c + 5, ref_r - 5, ref_c, ref_r))
 ```
+
+## FullStack AI · Ingénierie ML
+
+### Le terminal et un vrai projet Python · Une ligne de commande avec argparse
+
+```python
+import argparse
+
+def creer_parser():
+    p = argparse.ArgumentParser(description="Entraîne le modèle de fraude")
+    p.add_argument("donnees")
+    p.add_argument("--seuil", type=float, default=0.5)
+    p.add_argument("--modele", choices=["logreg", "foret"], default="logreg")
+    p.add_argument("--verbeux", action="store_true")
+    return p
+
+print(creer_parser().parse_args(["tx.csv", "--seuil", "0.3", "--verbeux"]))
+```
+
+### Le terminal et un vrai projet Python · La configuration par l'environnement
+
+```python
+def charger_config(env):
+    if "MODELE_CHEMIN" not in env:
+        raise ValueError("La variable d'environnement MODELE_CHEMIN est obligatoire.")
+    return {
+        "modele": env["MODELE_CHEMIN"],
+        "port": int(env.get("PORT", 8000)),
+        "debug": env.get("DEBUG", "").lower() in ("1", "true", "oui"),
+        "seuil": float(env.get("SEUIL", 0.5)),
+    }
+
+import os
+print(charger_config({"MODELE_CHEMIN": "modeles/fraude.joblib", "DEBUG": "True"}))
+```
+
+### Le terminal et un vrai projet Python · Des journaux plutôt que des print
+
+```python
+import io
+import logging
+
+def creer_logger(flux):
+    logger = logging.getLogger("fraude")
+    logger.handlers.clear()
+    logger.setLevel(logging.INFO)
+    h = logging.StreamHandler(flux)
+    h.setFormatter(logging.Formatter("%(levelname)s | %(name)s | %(message)s"))
+    logger.addHandler(h)
+    logger.propagate = False
+    return logger
+
+def journaliser(logger, id_tx, score):
+    niveau = logging.INFO if score < 0.5 else logging.WARNING
+    logger.log(niveau, f"transaction {id_tx} : score {score:.2f}")
+
+flux = io.StringIO()
+log = creer_logger(flux)
+journaliser(log, 101, 0.12); journaliser(log, 102, 0.87)
+print(flux.getvalue())
+```
+
+### Tableaux de bord avec Streamlit · Coder son propre cache
+
+```python
+import time
+
+def cache_donnees(ttl=None, horloge=time.time):
+    def decorateur(f):
+        memoire = {}
+        def enveloppe(*args, **kwargs):
+            cle = repr((args, sorted(kwargs.items())))
+            maintenant = horloge()
+            if cle in memoire:
+                valeur, quand = memoire[cle]
+                if ttl is None or maintenant - quand < ttl:
+                    return valeur
+            valeur = f(*args, **kwargs)
+            memoire[cle] = (valeur, maintenant)
+            return valeur
+        enveloppe.clear = memoire.clear
+        return enveloppe
+    return decorateur
+
+@cache_donnees()
+def lent(n):
+    time.sleep(0.2)
+    return n * 2
+
+t = time.perf_counter(); lent(21); lent(21); print(f"{time.perf_counter() - t:.2f} s pour deux appels")
+```
+
+### Docker pour l'IA · Un Dockerfile propre
+
+```python
+dockerfile = """
+FROM python:3.12-slim
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY . .
+RUN useradd --create-home appuser
+USER appuser
+EXPOSE 8000
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+"""
+print(dockerfile)
+```
+
+### Docker pour l'IA · Ce qui ne doit pas entrer dans l'image
+
+```python
+from fnmatch import fnmatch
+
+dockerignore = [".git", ".venv", "__pycache__", "*.pyc", ".env", "data/", "notebooks/"]
+
+def est_ignore(chemin, motifs):
+    for m in motifs:
+        if m.endswith("/"):
+            if chemin.startswith(m) or chemin == m.rstrip("/"):
+                return True
+        elif fnmatch(chemin, m) or any(fnmatch(p, m) for p in chemin.split("/")):
+            return True
+    return False
+
+for c in ["src/api.py", ".env", "data/brut.csv", "src/__pycache__/api.cpython-312.pyc"]:
+    print(c, "→", "exclu" if est_ignore(c, dockerignore) else "copié")
+```
+
+### Déployer sur un serveur EC2 · Auditer un groupe de sécurité
+
+```python
+BASES = {5432, 3306, 6379, 27017}
+
+def auditer(regles):
+    problemes = []
+    for r in regles:
+        if r["source"] != "0.0.0.0/0" or r["port"] in (80, 443):
+            continue
+        if r["port"] == 22:
+            problemes.append("SSH ouvert à Internet")
+        elif r["port"] in BASES:
+            problemes.append(f"Base de données {r['port']} ouverte à Internet")
+        else:
+            problemes.append(f"Port {r['port']} ouvert à Internet")
+    return problemes
+
+print(auditer([{"port": 22, "source": "0.0.0.0/0"}, {"port": 443, "source": "0.0.0.0/0"}, {"port": 5432, "source": "0.0.0.0/0"}]))
+```
+
+### MLflow : suivre et packager ses modèles · Ton propre suivi d'expériences
+
+```python
+from contextlib import contextmanager
+import pandas as pd
+
+class Run:
+    def __init__(self, nom):
+        self.nom, self.params, self.metriques, self.tags, self.statut = nom, {}, {}, {}, "RUNNING"
+    def log_param(self, cle, valeur):
+        self.params[cle] = valeur
+    def log_metric(self, cle, valeur, step=None):
+        self.metriques.setdefault(cle, []).append((step, float(valeur)))
+    def set_tag(self, cle, valeur):
+        self.tags[cle] = valeur
+
+class Suivi:
+    def __init__(self):
+        self.runs = []
+    @contextmanager
+    def run(self, nom):
+        r = Run(nom)
+        self.runs.append(r)
+        try:
+            yield r
+            r.statut = "FINISHED"
+        except Exception:
+            r.statut = "FAILED"
+            raise
+    def tableau(self):
+        lignes = []
+        for r in self.runs:
+            ligne = {"run": r.nom, "statut": r.statut}
+            ligne.update({f"params.{k}": v for k, v in r.params.items()})
+            ligne.update({f"metrics.{k}": v[-1][1] for k, v in r.metriques.items()})
+            lignes.append(ligne)
+        return pd.DataFrame(lignes)
+    def meilleur(self, metrique, mode="max"):
+        ok = [r for r in self.runs if r.statut == "FINISHED" and metrique in r.metriques]
+        cle = lambda r: r.metriques[metrique][-1][1]
+        return max(ok, key=cle) if mode == "max" else min(ok, key=cle)
+
+suivi = Suivi()
+for C in [0.1, 1, 10]:
+    with suivi.run(f"logreg-C{C}") as r:
+        r.log_param("C", C)
+        r.log_metric("auc", 0.8 + C / 100)
+print(suivi.meilleur("auc").nom)
+suivi.tableau()
+```
+
+### MLflow : suivre et packager ses modèles · Suivre une recherche d'hyperparamètres
+
+```python
+import pandas as pd
+from immo import charger
+from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import make_pipeline
+from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
+
+df = charger()
+df = df[df["prix"] / df["surface"] < 20000]          # retire les erreurs de saisie
+X, y = df.drop(columns="prix"), df["prix"]
+NUM = ["surface", "pieces", "etage", "ascenseur", "annee_construction", "distance_metro_m", "balcon"]
+CAT = ["quartier", "dpe"]
+pre = ColumnTransformer([
+    ("num", make_pipeline(SimpleImputer(strategy="median"), StandardScaler()), NUM),
+    ("cat", OneHotEncoder(handle_unknown="ignore"), CAT),
+])
+from contextlib import contextmanager
+import pandas as pd
+
+class Run:
+    def __init__(self, nom):
+        self.nom, self.params, self.metriques, self.tags, self.statut = nom, {}, {}, {}, "RUNNING"
+    def log_param(self, cle, valeur):
+        self.params[cle] = valeur
+    def log_metric(self, cle, valeur, step=None):
+        self.metriques.setdefault(cle, []).append((step, float(valeur)))
+    def set_tag(self, cle, valeur):
+        self.tags[cle] = valeur
+
+class Suivi:
+    def __init__(self):
+        self.runs = []
+    @contextmanager
+    def run(self, nom):
+        r = Run(nom)
+        self.runs.append(r)
+        try:
+            yield r
+            r.statut = "FINISHED"
+        except Exception:
+            r.statut = "FAILED"
+            raise
+    def tableau(self):
+        lignes = []
+        for r in self.runs:
+            ligne = {"run": r.nom, "statut": r.statut}
+            ligne.update({f"params.{k}": v for k, v in r.params.items()})
+            ligne.update({f"metrics.{k}": v[-1][1] for k, v in r.metriques.items()})
+            lignes.append(ligne)
+        return pd.DataFrame(lignes)
+    def meilleur(self, metrique, mode="max"):
+        ok = [r for r in self.runs if r.statut == "FINISHED" and metrique in r.metriques]
+        cle = lambda r: r.metriques[metrique][-1][1]
+        return max(ok, key=cle) if mode == "max" else min(ok, key=cle)
+from sklearn.linear_model import Ridge
+from sklearn.model_selection import cross_val_score
+
+suivi = Suivi()
+for alpha in [0.1, 1, 10, 100, 1000]:
+    with suivi.run(f"ridge-{alpha}") as r:
+        r.log_param("alpha", alpha)
+        scores = cross_val_score(make_pipeline(pre, Ridge(alpha=alpha)), X, y, cv=5, scoring="neg_mean_absolute_error")
+        r.log_metric("mae", -scores.mean())
+meilleur_alpha = suivi.meilleur("mae", mode="min").params["alpha"]
+print("meilleur alpha :", meilleur_alpha)
+suivi.tableau().sort_values("metrics.mae")
+```
+
+### Le développement asynchrone · Lancer les appels en même temps
+
+```python
+import asyncio, time
+
+async def appel_api(i):
+    await asyncio.sleep(0.05)
+    return {"id": i, "statut": "ok"}
+
+async def recuperer_tout(ids):
+    return list(await asyncio.gather(*(appel_api(i) for i in ids)))
+
+t = time.perf_counter()
+res = await recuperer_tout(range(8))
+print(f"{len(res)} résultats en {time.perf_counter() - t:.2f} s")
+```
+
+### Le développement asynchrone · Limiter la concurrence
+
+```python
+import asyncio
+
+etat = {"en_cours": 0, "max": 0}
+
+async def appel_api(i):
+    etat["en_cours"] += 1
+    etat["max"] = max(etat["max"], etat["en_cours"])
+    await asyncio.sleep(0.03)
+    etat["en_cours"] -= 1
+    return i * 10
+
+async def recuperer_limite(ids, max_simultanes):
+    limite = asyncio.Semaphore(max_simultanes)
+    async def un(i):
+        async with limite:
+            return await appel_api(i)
+    return list(await asyncio.gather(*(un(i) for i in ids)))
+
+print(await recuperer_limite(range(10), 3), "· au plus", etat["max"], "en même temps")
+```
+
+### Le développement asynchrone · Délai maximal et nouvelles tentatives
+
+```python
+import asyncio
+
+compteur = {"n": 0}
+
+async def service():
+    compteur["n"] += 1
+    await asyncio.sleep(0.3 if compteur["n"] <= 2 else 0.01)
+    return "ok"
+
+async def avec_retry(fabrique, essais=3, delai_max=0.1):
+    for tentative in range(essais):
+        try:
+            return await asyncio.wait_for(fabrique(), delai_max)
+        except TimeoutError:
+            if tentative == essais - 1:
+                raise
+
+print(await avec_retry(service), "après", compteur["n"], "tentatives")
+```
+
+### FastAPI : servir un modèle · Des routes et des erreurs
+
+```python
+from minifast import FastAPI, HTTPException, TestClient
+
+LIVRES = {
+    1: {"titre": "Fondation", "auteur": "Asimov"},
+    2: {"titre": "Dune", "auteur": "Herbert"},
+    3: {"titre": "Les Robots", "auteur": "Asimov"},
+    4: {"titre": "Hypérion", "auteur": "Simmons"},
+    5: {"titre": "La Fin de l'éternité", "auteur": "Asimov"},
+}
+
+app = FastAPI()
+
+@app.get("/sante")
+def sante():
+    return {"statut": "ok"}
+
+@app.get("/livres/{livre_id}")
+def lire(livre_id: int):
+    if livre_id not in LIVRES:
+        raise HTTPException(status_code=404, detail="Livre introuvable")
+    return {"id": livre_id, **LIVRES[livre_id]}
+
+@app.get("/livres")
+def lister(auteur: str | None = None, limite: int = 10):
+    res = [{"id": i, **l} for i, l in sorted(LIVRES.items()) if auteur is None or l["auteur"] == auteur]
+    return res[:limite]
+
+client = TestClient(app)
+print(client.get("/livres", params={"auteur": "Asimov", "limite": 2}).json())
+```
+
+### FastAPI : servir un modèle · Une route de prédiction validée
+
+```python
+from minifast import FastAPI, HTTPException, TestClient
+from pydantic import BaseModel, Field
+
+VERSION = "immo-1.2.0"
+PRIX_M2 = {"Centre": 9800, "Gare": 7600, "Université": 6900, "Port": 6400, "Périphérie": 4700}
+
+def estimer(surface, pieces, quartier):
+    return surface * PRIX_M2[quartier] + 6000 * pieces
+
+class Appartement(BaseModel):
+    surface: float = Field(gt=0)
+    pieces: int = Field(ge=1, le=10)
+    quartier: str
+
+class Lot(BaseModel):
+    appartements: list[Appartement]
+
+app = FastAPI(title="Estimation Immo")
+
+def _prix(a):
+    try:
+        return round(estimer(a.surface, a.pieces, a.quartier))
+    except KeyError:
+        raise HTTPException(status_code=400, detail="Quartier inconnu")
+
+@app.get("/sante")
+def sante():
+    return {"statut": "ok", "version": VERSION}
+
+@app.post("/v1/estimer")
+def estimer_un(appart: Appartement):
+    return {"prix": _prix(appart), "version": VERSION}
+
+@app.post("/v1/estimer/lot")
+def estimer_lot(lot: Lot):
+    return {"prix": [_prix(a) for a in lot.appartements], "version": VERSION}
+
+client = TestClient(app)
+print(client.post("/v1/estimer", json={"surface": 45.5, "pieces": 2, "quartier": "Gare"}).json())
+```
+
+## FullStack AI · Projet d'infrastructure
+
+### Projet · Infrastructure d'IA anti-fraude · Construire les variables
+
+```python
+import numpy as np
+import pandas as pd
+from paiements import charger
+
+df = charger()
+
+def preparer(df):
+    return pd.DataFrame({
+        "pays_diff": (df["pays_carte"] != df["pays_ip"]).astype(int),
+        "log_montant": np.log1p(df["montant"] / 100),
+        "nb_tx_24h": df["nb_tx_24h"],
+        "compte_recent": (df["anciennete_compte_j"] < 30).astype(int),
+        "appareil_nouveau": df["appareil_nouveau"],
+        "nuit": (df["heure"] < 6).astype(int),
+        "cat_risque": df["categorie"].isin(["électronique", "jeux"]).astype(int),
+    }, index=df.index)
+
+X = preparer(df)
+X.assign(fraude=df["fraude"]).groupby("pays_diff")["fraude"].mean()
+```
+
+### Projet · Infrastructure d'IA anti-fraude · Entraîner, évaluer, choisir le seuil
+
+```python
+import numpy as np
+import pandas as pd
+from paiements import charger
+from sklearn.model_selection import train_test_split
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
+
+def preparer(df):
+    return pd.DataFrame({
+        "pays_diff": (df["pays_carte"] != df["pays_ip"]).astype(int),
+        "log_montant": np.log1p(df["montant"] / 100),
+        "nb_tx_24h": df["nb_tx_24h"],
+        "compte_recent": (df["anciennete_compte_j"] < 30).astype(int),
+        "appareil_nouveau": df["appareil_nouveau"],
+        "nuit": (df["heure"] < 6).astype(int),
+        "cat_risque": df["categorie"].isin(["électronique", "jeux"]).astype(int),
+    }, index=df.index)
+
+df = charger()
+X, y = preparer(df), df["fraude"]
+X_train, X_test, y_train, y_test, m_train, m_test = train_test_split(
+    X, y, df["montant"], test_size=0.25, stratify=y, random_state=0)
+from sklearn.metrics import roc_auc_score, average_precision_score
+
+modele = make_pipeline(StandardScaler(), LogisticRegression(max_iter=2000)).fit(X_train, y_train)
+proba_test = modele.predict_proba(X_test)[:, 1]
+auc = roc_auc_score(y_test, proba_test)
+ap = average_precision_score(y_test, proba_test)
+
+def cout(seuil):
+    alerte = proba_test >= seuil
+    fraudes_ratees = m_test[(y_test == 1).to_numpy() & ~alerte].sum()
+    fausses_alertes = ((y_test == 0).to_numpy() & alerte).sum()
+    return fraudes_ratees + 5 * fausses_alertes
+
+seuils = np.linspace(0.01, 0.99, 99)
+couts = [cout(s) for s in seuils]
+seuil = seuils[int(np.argmin(couts))]
+print(f"AUC {auc:.3f} · AP {ap:.3f} · seuil optimal {seuil:.2f} · coût {min(couts):.0f} € (contre {cout(0.5):.0f} € au seuil 0,5)")
+```
+
+### Projet · Infrastructure d'IA anti-fraude · Servir le modèle
+
+```python
+import numpy as np
+import pandas as pd
+from paiements import charger
+from sklearn.model_selection import train_test_split
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
+
+def preparer(df):
+    return pd.DataFrame({
+        "pays_diff": (df["pays_carte"] != df["pays_ip"]).astype(int),
+        "log_montant": np.log1p(df["montant"] / 100),
+        "nb_tx_24h": df["nb_tx_24h"],
+        "compte_recent": (df["anciennete_compte_j"] < 30).astype(int),
+        "appareil_nouveau": df["appareil_nouveau"],
+        "nuit": (df["heure"] < 6).astype(int),
+        "cat_risque": df["categorie"].isin(["électronique", "jeux"]).astype(int),
+    }, index=df.index)
+
+df = charger()
+X, y = preparer(df), df["fraude"]
+X_train, X_test, y_train, y_test, m_train, m_test = train_test_split(
+    X, y, df["montant"], test_size=0.25, stratify=y, random_state=0)
+from minifast import FastAPI, TestClient
+from pydantic import BaseModel, Field
+
+modele = make_pipeline(StandardScaler(), LogisticRegression(max_iter=2000)).fit(X_train, y_train)
+SEUIL = 0.07
+VERSION = "fraude-1.0.0"
+
+class Transaction(BaseModel):
+    montant: float = Field(gt=0)
+    heure: int = Field(ge=0, le=23)
+    pays_carte: str
+    pays_ip: str
+    nb_tx_24h: int = Field(ge=0)
+    anciennete_compte_j: int = Field(ge=0)
+    appareil_nouveau: int = Field(ge=0, le=1)
+    categorie: str
+
+app = FastAPI(title="Anti-fraude")
+
+@app.get("/sante")
+def sante():
+    return {"statut": "ok", "version": VERSION}
+
+@app.post("/v1/score")
+def scorer(tx: Transaction):
+    ligne = preparer(pd.DataFrame([tx.model_dump()]))
+    score = float(modele.predict_proba(ligne)[0, 1])
+    return {"score": round(score, 4), "fraude": score >= SEUIL, "version": VERSION}
+
+client = TestClient(app)
+suspecte = {"montant": 900, "heure": 3, "pays_carte": "FR", "pays_ip": "NG", "nb_tx_24h": 6,
+            "anciennete_compte_j": 2, "appareil_nouveau": 1, "categorie": "électronique"}
+print(client.post("/v1/score", json=suspecte).json())
+```
+
+## FullStack AI · Ingénierie de l'IA
+
+### LangChain et LangGraph · Recoder le pipe de LangChain
+
+```python
+class Runnable:
+    def __init__(self, fonction):
+        self.fonction = fonction
+
+    def invoke(self, x):
+        return self.fonction(x)
+
+    def batch(self, xs):
+        return [self.invoke(x) for x in xs]
+
+    def __or__(self, autre):
+        if not isinstance(autre, Runnable):
+            autre = Runnable(autre)
+        return Runnable(lambda x: autre.invoke(self.invoke(x)))
+
+prompt = Runnable(lambda d: f"Résume : {d['ticket']}")
+faux_llm = Runnable(lambda p: {"texte": p.upper()})
+parser = lambda r: r["texte"]
+chaine = prompt | faux_llm | parser
+print(chaine.invoke({"ticket": "synchro en panne"}))
+```
+
+### LangChain et LangGraph · Un mini LangGraph
+
+```python
+FIN = "__fin__"
+
+class Graphe:
+    def __init__(self):
+        self.noeuds, self.aretes, self.routeurs, self.entree, self.trace = {}, {}, {}, None, []
+    def ajouter_noeud(self, nom, fonction):
+        self.noeuds[nom] = fonction
+    def ajouter_arete(self, source, cible):
+        self.aretes[source] = cible
+    def ajouter_arete_conditionnelle(self, source, routeur):
+        self.routeurs[source] = routeur
+    def point_entree(self, nom):
+        self.entree = nom
+    def invoke(self, etat, max_etapes=25):
+        etat, courant, self.trace = dict(etat), self.entree, []
+        while courant != FIN:
+            if len(self.trace) >= max_etapes:
+                raise RuntimeError(f"Plus de {max_etapes} étapes : le graphe tourne en rond.")
+            self.trace.append(courant)
+            etat.update(self.noeuds[courant](etat) or {})
+            courant = self.routeurs[courant](etat) if courant in self.routeurs else self.aretes.get(courant, FIN)
+        return etat
+
+g = Graphe()
+g.ajouter_noeud("rediger", lambda e: {"brouillon": e.get("brouillon", "") + "!", "essais": e.get("essais", 0) + 1})
+g.ajouter_noeud("relire", lambda e: {"ok": e["essais"] >= 3})
+g.point_entree("rediger")
+g.ajouter_arete("rediger", "relire")
+g.ajouter_arete_conditionnelle("relire", lambda e: FIN if e["ok"] else "rediger")
+print(g.invoke({"brouillon": "Bonjour"}), g.trace)
+```
+
+### LangChain et LangGraph · Un agent avec le graphe
+
+```python
+FIN = "__fin__"
+
+class Graphe:
+    def __init__(self):
+        self.noeuds, self.aretes, self.routeurs, self.entree, self.trace = {}, {}, {}, None, []
+    def ajouter_noeud(self, nom, fonction):
+        self.noeuds[nom] = fonction
+    def ajouter_arete(self, source, cible):
+        self.aretes[source] = cible
+    def ajouter_arete_conditionnelle(self, source, routeur):
+        self.routeurs[source] = routeur
+    def point_entree(self, nom):
+        self.entree = nom
+    def invoke(self, etat, max_etapes=25):
+        etat, courant, self.trace = dict(etat), self.entree, []
+        while courant != FIN:
+            if len(self.trace) >= max_etapes:
+                raise RuntimeError(f"Plus de {max_etapes} étapes : le graphe tourne en rond.")
+            self.trace.append(courant)
+            etat.update(self.noeuds[courant](etat) or {})
+            courant = self.routeurs[courant](etat) if courant in self.routeurs else self.aretes.get(courant, FIN)
+        return etat
+
+def meteo(ville):
+    return {"Lyon": "14 °C, nuageux", "Nice": "19 °C, soleil"}.get(ville, "inconnue")
+
+OUTILS = {"meteo": meteo}
+
+def decider(messages):
+    """Un LLM simulé : demande la météo, puis répond avec le résultat de l'outil."""
+    if messages[-1]["role"] == "outil":
+        return {"role": "assistant", "contenu": f"Il fait {messages[-1]['contenu']}."}
+    return {"role": "assistant", "outil": "meteo", "args": {"ville": "Lyon"}}
+
+def noeud_agent(etat):
+    return {"messages": etat["messages"] + [decider(etat["messages"])]}
+
+def noeud_outils(etat):
+    d = etat["messages"][-1]
+    resultat = OUTILS[d["outil"]](**d["args"])
+    return {"messages": etat["messages"] + [{"role": "outil", "contenu": resultat}]}
+
+agent = Graphe()
+agent.ajouter_noeud("agent", noeud_agent)
+agent.ajouter_noeud("outils", noeud_outils)
+agent.point_entree("agent")
+agent.ajouter_arete_conditionnelle("agent", lambda e: "outils" if "outil" in e["messages"][-1] else FIN)
+agent.ajouter_arete("outils", "agent")
+
+fin = agent.invoke({"messages": [{"role": "user", "contenu": "Quel temps fait-il à Lyon ?"}]})
+for m in fin["messages"]:
+    print(m)
+```
+
+### Observabilité des LLM · Un décorateur de traçage
+
+```python
+import time
+import functools
+
+SPANS = []
+PILE = []
+
+def tracer(f):
+    @functools.wraps(f)
+    def enveloppe(*args, **kwargs):
+        parent = PILE[-1] if PILE else None
+        PILE.append(f.__name__)
+        debut, statut = time.perf_counter(), "ok"
+        try:
+            return f(*args, **kwargs)
+        except Exception:
+            statut = "erreur"
+            raise
+        finally:
+            PILE.pop()
+            SPANS.append({"nom": f.__name__, "parent": parent, "duree_ms": (time.perf_counter() - debut) * 1000, "statut": statut})
+    return enveloppe
+
+@tracer
+def rechercher(q):
+    time.sleep(0.02); return ["doc1", "doc2"]
+
+@tracer
+def generer(q, docs):
+    time.sleep(0.05); return "réponse"
+
+@tracer
+def repondre(q):
+    return generer(q, rechercher(q))
+
+repondre("Comment réinitialiser mon mot de passe ?")
+for s in SPANS:
+    print(s)
+```
+
+### Observabilité des LLM · Analyser les journaux de production
+
+```python
+import numpy as np
+import pandas as pd
+
+rng = np.random.default_rng(0)
+n = 3000
+modele = rng.choice(["rapide", "standard", "expert"], n, p=[0.5, 0.35, 0.15])
+base = pd.Series(modele).map({"rapide": 700, "standard": 1600, "expert": 3200}).to_numpy()
+journaux = pd.DataFrame({
+    "modele": modele,
+    "latence_ms": np.round(base * rng.lognormal(0, 0.35, n)),
+    "tokens_entree": rng.integers(300, 4000, n),
+    "tokens_sortie": rng.integers(50, 800, n),
+    "erreur": rng.random(n) < pd.Series(modele).map({"rapide": 0.005, "standard": 0.03, "expert": 0.01}).to_numpy(),
+})
+PRIX = {"rapide": (0.25, 1.25), "standard": (3.0, 15.0), "expert": (15.0, 75.0)}
+
+j = journaux.copy()
+j["cout"] = [(te * PRIX[m][0] + ts * PRIX[m][1]) / 1e6 for m, te, ts in zip(j["modele"], j["tokens_entree"], j["tokens_sortie"])]
+g = j.groupby("modele")
+resume = pd.DataFrame({
+    "appels": g.size(),
+    "p50_ms": g["latence_ms"].quantile(0.5),
+    "p95_ms": g["latence_ms"].quantile(0.95),
+    "taux_erreur": g["erreur"].mean(),
+    "cout_eur": g["cout"].sum(),
+})
+alertes = sorted(resume.index[(resume["p95_ms"] > 4000) | (resume["taux_erreur"] > 0.02)])
+print("alertes :", alertes)
+resume.round(3)
+```
+
+### Servir un LLM : vLLM et Hugging Face · Dimensionner le cache KV
+
+```python
+def memoire_kv(n_couches, n_tetes_kv, d_tete, n_tokens, octets=2):
+    return 2 * n_couches * n_tetes_kv * d_tete * n_tokens * octets
+
+par_token_ko = memoire_kv(32, 8, 128, 1) / 1024
+disponible = (80 * 0.9 - 16) * 1024 ** 3
+sequences_max = int(disponible // memoire_kv(32, 8, 128, 8192))
+print(f"{par_token_ko:.0f} Kio par token · {sequences_max} conversations de 8 192 tokens en parallèle")
+```
+
+### Servir un LLM : vLLM et Hugging Face · Batching statique contre continu
+
+```python
+def pas_statique(longueurs, B):
+    return sum(max(longueurs[i:i + B]) for i in range(0, len(longueurs), B))
+
+def pas_continu(longueurs, B):
+    file, actives, pas = list(longueurs), [], 0
+    while file or actives:
+        while file and len(actives) < B:
+            actives.append(file.pop(0))
+        pas += 1
+        actives = [r - 1 for r in actives if r > 1]
+    return pas
+
+L = [50, 400, 30, 60, 380, 20, 40, 45]
+print("statique :", pas_statique(L, 4), "pas · continu :", pas_continu(L, 4), "pas")
+```
+
+### MCP : le Model Context Protocol · Déclarer des outils à partir des fonctions
+
+```python
+import inspect
+
+TYPES_JSON = {int: "integer", float: "number", str: "string", bool: "boolean", list: "array", dict: "object"}
+
+class ServeurMCP:
+    def __init__(self, nom, version="1.0.0"):
+        self.nom, self.version, self.outils = nom, version, {}
+
+    def outil(self, f):
+        sig = inspect.signature(f)
+        proprietes = {n: {"type": TYPES_JSON.get(p.annotation, "string")} for n, p in sig.parameters.items()}
+        requis = [n for n, p in sig.parameters.items() if p.default is inspect.Parameter.empty]
+        self.outils[f.__name__] = {
+            "fonction": f,
+            "definition": {"name": f.__name__, "description": (f.__doc__ or "").strip(),
+                           "inputSchema": {"type": "object", "properties": proprietes, "required": requis}},
+        }
+        return f
+
+    def lister(self):
+        return [o["definition"] for o in self.outils.values()]
+
+serveur = ServeurMCP("support")
+
+@serveur.outil
+def chercher_commande(id: int, details: bool = False):
+    """Renvoie le statut d'une commande à partir de son numéro."""
+    return f"Commande {id} : expédiée"
+
+serveur.lister()
+```
+
+### MCP : le Model Context Protocol · Répondre au protocole
+
+```python
+import inspect
+
+TYPES_JSON = {int: "integer", float: "number", str: "string", bool: "boolean", list: "array", dict: "object"}
+
+class ServeurMCP:
+    def __init__(self, nom, version="1.0.0"):
+        self.nom, self.version, self.outils = nom, version, {}
+
+    def outil(self, f):
+        sig = inspect.signature(f)
+        proprietes = {n: {"type": TYPES_JSON.get(p.annotation, "string")} for n, p in sig.parameters.items()}
+        requis = [n for n, p in sig.parameters.items() if p.default is inspect.Parameter.empty]
+        self.outils[f.__name__] = {
+            "fonction": f,
+            "definition": {"name": f.__name__, "description": (f.__doc__ or "").strip(),
+                           "inputSchema": {"type": "object", "properties": proprietes, "required": requis}},
+        }
+        return f
+
+    def lister(self):
+        return [o["definition"] for o in self.outils.values()]
+
+class Serveur(ServeurMCP):
+    def traiter(self, requete):
+        if "id" not in requete:
+            return None
+        base = {"jsonrpc": "2.0", "id": requete["id"]}
+        methode, params = requete.get("method"), requete.get("params", {})
+        if methode == "initialize":
+            return {**base, "result": {"protocolVersion": "2025-06-18",
+                                       "serverInfo": {"name": self.nom, "version": self.version},
+                                       "capabilities": {"tools": {}}}}
+        if methode == "tools/list":
+            return {**base, "result": {"tools": self.lister()}}
+        if methode == "tools/call":
+            nom = params.get("name")
+            try:
+                if nom not in self.outils:
+                    raise KeyError(f"Outil inconnu : {nom}")
+                texte, erreur = str(self.outils[nom]["fonction"](**params.get("arguments", {}))), False
+            except Exception as e:
+                texte, erreur = str(e), True
+            return {**base, "result": {"content": [{"type": "text", "text": texte}], "isError": erreur}}
+        return {**base, "error": {"code": -32601, "message": "Method not found"}}
+
+serveur = Serveur("support")
+
+@serveur.outil
+def chercher_commande(id: int):
+    """Renvoie le statut d'une commande."""
+    return {1042: "expédiée le 3 mars"}.get(id, "introuvable")
+
+for req in [{"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {}},
+            {"jsonrpc": "2.0", "id": 2, "method": "tools/call", "params": {"name": "chercher_commande", "arguments": {"id": 1042}}}]:
+    print(serveur.traiter(req))
+```

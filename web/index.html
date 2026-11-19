@@ -612,6 +612,52 @@ a.card:hover, .mod:hover, .wk:hover, .continue:hover { transform: translateY(-3p
 @keyframes scan { to { transform: translateY(700px); } }
 @media (prefers-reduced-motion: reduce) { .hero .resume::after { animation: none; display: none; } }
 
+/* ---------- lecteur audio ---------- */
+.needs-listen, .say { display: none !important; }
+.can-listen .needs-listen, .has-tts .needs-listen { display: inline-flex !important; }
+.can-listen .say, .has-tts .say { display: inline-flex !important; }
+.speakable { position: relative; scroll-margin: 120px; transition: background .3s, box-shadow .3s; border-radius: 8px; }
+.say {
+  align-items: center; justify-content: center; width: 24px; height: 24px; padding: 0; margin: 0 8px 0 0;
+  border-radius: 50%; border: 1px solid rgba(59, 130, 255, .45); background: rgba(10, 16, 32, .9);
+  color: var(--accent-2); font-size: 10px; line-height: 1; cursor: pointer; vertical-align: .15em;
+  opacity: .6; transition: opacity .2s, box-shadow .2s, transform .1s;
+}
+.say:hover, .say:focus-visible { opacity: 1; box-shadow: 0 0 14px rgba(0, 225, 255, .5); }
+.say:active { transform: scale(.92); }
+.prose h2 .say, .prose h3 .say { vertical-align: .35em; }
+@media (min-width: 900px) {
+  .prose > p > .say, .prose > h2 > .say, .prose > h3 > .say, .prose > h4 > .say, .prose > ul > li > .say, .prose > ol > li > .say, .prose > blockquote > .say, .prose > .callout > .say {
+    position: absolute; left: -40px; top: .25em; margin: 0;
+  }
+  .prose > ul > li > .say, .prose > ol > li > .say { left: -64px; }
+  .prose > h2 > .say { left: -40px; top: .3em; }
+  .speakable:not(:hover):not(.reading) > .say { opacity: .35; }
+}
+.reading {
+  background: linear-gradient(90deg, rgba(0, 225, 255, .12), rgba(59, 130, 255, .04) 70%, transparent);
+  box-shadow: -14px 0 0 -10px var(--accent-2), 0 0 0 6px rgba(0, 225, 255, .05);
+}
+.reading > .say, .reading > td > .say { opacity: 1 !important; background: var(--grad); color: #020611; border-color: transparent; box-shadow: 0 0 16px rgba(0, 225, 255, .6); animation: pulse 1.6s ease-in-out infinite; }
+.reader {
+  position: fixed; left: 0; right: 0; margin: 0 auto; bottom: max(14px, env(safe-area-inset-bottom)); z-index: 50;
+  width: min(560px, calc(100% - 20px)); border-radius: 18px; overflow: hidden;
+  background: rgba(6, 10, 22, .88); border: 1px solid rgba(59, 130, 255, .45);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, .6), 0 0 30px rgba(59, 130, 255, .25);
+  backdrop-filter: blur(16px) saturate(140%); -webkit-backdrop-filter: blur(16px) saturate(140%);
+  animation: rise .35s cubic-bezier(.2, .7, .1, 1) both;
+}
+.rd-track { height: 3px; background: rgba(59, 130, 255, .15); }
+.rd-fill { display: block; height: 100%; width: 0; background: var(--grad); box-shadow: 0 0 10px var(--accent-2); transition: width .4s ease; }
+.rd-in { display: flex; align-items: center; gap: 6px; padding: 8px 10px; }
+.rd-btn { border: 1px solid var(--line); background: rgba(10, 16, 32, .9); color: var(--ink); border-radius: 12px; min-width: 40px; height: 40px; padding: 0 10px; font: 600 14px var(--mono); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+.rd-btn:hover { border-color: var(--accent); box-shadow: 0 0 14px rgba(59, 130, 255, .3); }
+.rd-btn.big { min-width: 48px; height: 48px; border-radius: 50%; background: var(--grad); color: #020611; border-color: transparent; font-size: 15px; box-shadow: 0 0 18px rgba(0, 225, 255, .4); }
+.rd-pos { flex: 1; min-width: 0; font: 12px var(--mono); color: var(--muted); text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rd-rate { color: var(--accent-2); }
+.reading-on main { padding-bottom: 140px; }
+@media (max-width: 420px) { .rd-btn { min-width: 36px; height: 38px; padding: 0 8px; } .rd-btn.big { min-width: 44px; height: 44px; } .rd-pos { font-size: 11px; } }
+
 </style>
 </head>
 <body>
@@ -2448,26 +2494,197 @@ function lessonTutor(it) {
   return box;
 }
 
-/* ================================================================ lecture audio */
-function speakableLines(it) {
-  const t = (it.text || "").replace(/^#+\s*/gm, "").replace(/\*\*|`|^>\s*/gm, "").replace(/\|/g, " ").replace(/^- /gm, "").replace(/\[(.*?)\]\(.*?\)/g, "$1");
-  const paras = [it.title + ".", ...t.split(/\n{2,}/).map(p => p.replace(/\n/g, " ").trim()).filter(p => p && !/^[-\s|:]+$/.test(p))];
-  const lines = []; let cur = "";
-  for (const p of paras) { if ((cur + " " + p).length > 1800) { if (cur) lines.push(cur); cur = p.slice(0, 1800); } else cur = cur ? cur + " " + p : p; }
-  if (cur) lines.push(cur);
-  return lines.map(text => ({ text, language: "fr" }));
+/* ================================================================ lecture audio
+   Lit la leçon paragraphe par paragraphe, avec un bouton ▶ sur chaque bloc et une barre de lecture.
+   Moteur : la voix de Claude (capacité tts) quand elle est offerte, sinon la synthèse vocale du navigateur. */
+const RATES = [0.8, 1, 1.25, 1.5];
+const Reader = { segs: [], i: -1, state: "idle", tok: 0, bar: null, refused: false, follow: true,
+  rate: (() => { try { return +localStorage.getItem("prepa-ai:rate") || 1; } catch (e) { return 1; } })() };
+const canSpeak = () => !Reader.refused && (!!caps.tts || "speechSynthesis" in window);
+
+function sayText(el) {
+  let t = (el.innerText || el.textContent || "").replace(/^▶\s*/, "");
+  t = t.replace(/→/g, ", ").replace(/≈/g, " environ ").replace(/×/g, " fois ").replace(/≤/g, " inférieur ou égal à ").replace(/≥/g, " supérieur ou égal à ")
+       .replace(/[•·]/g, ", ").replace(/\s*\n+\s*/g, ". ").replace(/\s{2,}/g, " ").replace(/\.\s*\./g, ".").trim();
+  return t.length > 1900 ? t.slice(0, t.lastIndexOf(" ", 1900)) + "…" : t;
 }
-function listenButton(it) {
-  const b = h(`<button class="btn small needs-tts" type="button">🔊 Écouter la leçon</button>`);
-  let playing = false;
-  b.addEventListener("click", async () => {
-    if (!caps.tts) return;
-    if (playing) { caps.tts.stop(); return; }
-    playing = true; b.textContent = "■ Arrêter la lecture";
-    try { await caps.tts.speak(speakableLines(it)); } catch (e) { if (e && e.code === "not_granted") document.body.classList.remove("has-tts"); }
-    playing = false; b.textContent = "🔊 Écouter la leçon";
+function collectSegments(root) {
+  const segs = [];
+  const add = el => { if (sayText(el).length > 1) segs.push(el); };
+  for (const el of $(".prose", root).children) {
+    if (/^(P|H2|H3|H4)$/.test(el.tagName)) add(el);
+    else if (el.tagName === "UL" || el.tagName === "OL") [...el.children].forEach(add);
+    else if (el.tagName === "BLOCKQUOTE" || el.classList.contains("callout")) add(el);
+    else if (el.classList.contains("table-wrap")) $$("tr", el).forEach(add);
+  }
+  for (const el of $$(".tasks-zone .section-t, .tasks-zone li, .ex-zone .exo", root)) {
+    if (el.classList.contains("exo")) { const p = $(".prompt", el); if (p) { p.dataset.say = `${$(".num", el).textContent}. ${$("h3", el).textContent}. `; segs.push(p); } }
+    else add(el);
+  }
+  return segs;
+}
+function segText(el) { return (el.dataset.say || "") + sayText(el); }
+
+function markSegment(i) {
+  $$(".reading").forEach(e => e.classList.remove("reading"));
+  const el = Reader.segs[i]; if (!el) return;
+  el.classList.add("reading");
+  if (Reader.follow) el.scrollIntoView({ behavior: reduceMotion() ? "auto" : "smooth", block: "center" });
+  updateBar();
+}
+function updateBar() {
+  const b = Reader.bar; if (!b) return;
+  const n = Reader.segs.length, i = Math.max(0, Reader.i);
+  $(".rd-play", b).innerHTML = Reader.state === "playing" ? "❚❚" : "▶";
+  $(".rd-play", b).setAttribute("aria-label", Reader.state === "playing" ? "Pause" : "Lecture");
+  $(".rd-pos", b).textContent = Reader.state === "done" ? "Fin de la leçon" : `Paragraphe ${i + 1} / ${n}`;
+  $(".rd-rate", b).textContent = String(Reader.rate).replace(".", ",") + "×";
+  $(".rd-fill", b).style.width = `${n ? ((Reader.state === "done" ? n : i) / n) * 100 : 0}%`;
+}
+function showBar() {
+  if (Reader.bar) return;
+  const b = h(`<div class="reader" role="region" aria-label="Lecture audio">
+    <div class="rd-track"><i class="rd-fill"></i></div>
+    <div class="rd-in">
+      <button type="button" class="rd-btn rd-prev" aria-label="Paragraphe précédent">⏮</button>
+      <button type="button" class="rd-btn rd-play big" aria-label="Pause">❚❚</button>
+      <button type="button" class="rd-btn rd-next" aria-label="Paragraphe suivant">⏭</button>
+      <span class="rd-pos tab"></span>
+      <button type="button" class="rd-btn rd-rate" aria-label="Vitesse de lecture"></button>
+      <button type="button" class="rd-btn rd-close" aria-label="Arrêter la lecture">✕</button>
+    </div></div>`);
+  $(".rd-prev", b).addEventListener("click", () => readFrom(Math.max(0, Reader.i - 1)));
+  $(".rd-next", b).addEventListener("click", () => { if (Reader.i < Reader.segs.length - 1) readFrom(Reader.i + 1); });
+  $(".rd-play", b).addEventListener("click", togglePause);
+  $(".rd-rate", b).addEventListener("click", () => {
+    Reader.rate = RATES[(RATES.indexOf(Reader.rate) + 1) % RATES.length] || 1;
+    try { localStorage.setItem("prepa-ai:rate", Reader.rate); } catch (e) {}
+    if (caps.tts && Reader.engine === "claude") { try { caps.tts.setRate?.(Reader.rate); } catch (e) {} }
+    else if (Reader.state === "playing") readFrom(Reader.i);
+    updateBar();
   });
-  return b;
+  $(".rd-close", b).addEventListener("click", stopReading);
+  document.body.appendChild(b); document.body.classList.add("reading-on");
+  Reader.bar = b;
+}
+function stopReading() {
+  Reader.tok++;
+  if (Reader.engine === "claude" && caps.tts) caps.tts.stop().catch(() => {});
+  if ("speechSynthesis" in window) speechSynthesis.cancel();
+  Reader.state = "idle"; Reader.i = -1;
+  $$(".reading").forEach(e => e.classList.remove("reading"));
+  if (Reader.bar) { Reader.bar.remove(); Reader.bar = null; }
+  document.body.classList.remove("reading-on");
+  $$(".listen-btn").forEach(b => b.textContent = "🎧 Écouter la leçon");
+}
+function togglePause() {
+  if (Reader.state === "playing") {
+    Reader.state = "paused";
+    if (Reader.engine === "claude") caps.tts.pause().catch(() => {});
+    else { Reader.tok++; speechSynthesis.cancel(); }
+  } else if (Reader.state === "paused") {
+    if (Reader.engine === "claude") { Reader.state = "playing"; caps.tts.resume().catch(() => {}); }
+    else readFrom(Reader.i);
+  } else readFrom(Reader.state === "done" ? 0 : Math.max(0, Reader.i));
+  updateBar();
+}
+function finishReading() { Reader.state = "done"; $$(".reading").forEach(e => e.classList.remove("reading")); updateBar(); }
+
+/* --- moteur 1 : la voix de Claude, toute la suite de la leçon en une lecture --- */
+function readWithClaude(i, tok) {
+  Reader.engine = "claude";
+  const lines = Reader.segs.slice(i, i + 100).map((el, k) => ({ text: segText(el), id: "s" + (i + k), language: "fr" }));
+  caps.tts.speak(lines, { rate: Reader.rate, language: "fr" }).then(() => {
+    if (tok !== Reader.tok) return;
+    if (i + 100 < Reader.segs.length) readFrom(i + 100); else finishReading();
+  }).catch(e => {
+    if (tok !== Reader.tok) return;
+    if (e && (e.code === "not_granted" || e.code === "unavailable")) { Reader.refused = true; document.body.classList.remove("can-listen"); stopReading(); return; }
+    if (e && e.code === "stopped" && e.reason === "viewer_stopped") { stopReading(); return; }
+    if (e && e.code === "stopped") return;
+    Reader.state = "paused"; updateBar();
+  });
+}
+/* --- moteur 2 : la synthèse vocale du navigateur, phrase par phrase --- */
+let frVoice = null;
+function pickVoice() {
+  if (!("speechSynthesis" in window)) return null;
+  const v = speechSynthesis.getVoices().filter(v => /^fr(-|_|$)/i.test(v.lang));
+  const score = x => (/fr[-_]FR/i.test(x.lang) ? 4 : 0) + (/premium|enhanced|natural|neural|google|amélie|amelie|thomas|audrey|denise|henri|marie/i.test(x.name) ? 3 : 0) + (x.localService ? 1 : 0);
+  frVoice = v.sort((a, b) => score(b) - score(a))[0] || null;
+  return frVoice;
+}
+if ("speechSynthesis" in window) { pickVoice(); speechSynthesis.addEventListener?.("voiceschanged", pickVoice); }
+function chunks(text) {
+  const out = []; let cur = "";
+  for (const s of text.match(/[^.!?;:]+[.!?;:]*\s*/g) || [text]) {
+    if ((cur + s).length > 220 && cur) { out.push(cur); cur = s; } else cur += s;
+  }
+  if (cur.trim()) out.push(cur);
+  return out;
+}
+function readWithBrowser(i, tok) {
+  Reader.engine = "browser";
+  speechSynthesis.cancel();
+  const parts = chunks(segText(Reader.segs[i]));
+  let k = 0;
+  const next = () => {
+    if (tok !== Reader.tok) return;
+    if (k >= parts.length) { if (i + 1 < Reader.segs.length) readFrom(i + 1, true); else finishReading(); return; }
+    const u = new SpeechSynthesisUtterance(parts[k++]);
+    u.lang = frVoice ? frVoice.lang : "fr-FR"; if (frVoice) u.voice = frVoice;
+    u.rate = Reader.rate;
+    u.onend = next;
+    u.onerror = e => { if (tok === Reader.tok && e.error !== "interrupted" && e.error !== "canceled") next(); };
+    speechSynthesis.speak(u);
+  };
+  next();
+}
+function readFrom(i, auto) {
+  if (!canSpeak() || !Reader.segs[i]) return;
+  const tok = ++Reader.tok;
+  Reader.i = i; Reader.state = "playing";
+  showBar(); markSegment(i);
+  $$(".listen-btn").forEach(b => b.textContent = "■ Arrêter la lecture");
+  if (caps.tts && !Reader.refused) {
+    if (auto && Reader.engine === "claude") return;
+    readWithClaude(i, tok);
+  } else readWithBrowser(i, tok);
+}
+if (!window.__readerHooks) {
+  window.__readerHooks = true;
+  window.addEventListener("hashchange", stopReading);
+  document.addEventListener("visibilitychange", () => { if (document.hidden && Reader.engine === "browser" && Reader.state === "playing") togglePause(); });
+  let wheelT = 0;
+  window.addEventListener("wheel", () => { Reader.follow = false; clearTimeout(wheelT); wheelT = setTimeout(() => Reader.follow = true, 6000); }, { passive: true });
+  window.addEventListener("touchmove", () => { Reader.follow = false; clearTimeout(wheelT); wheelT = setTimeout(() => Reader.follow = true, 6000); }, { passive: true });
+}
+
+/* Ajoute les boutons ▶ à chaque bloc lisible, et renvoie le bouton « Écouter la leçon ». */
+function setupReader(root) {
+  Reader.segs = collectSegments(root);
+  (Reader.unsub || []).forEach(f => { try { f(); } catch (e) {} });
+  Reader.unsub = [];
+  if (caps.tts) {
+    Reader.unsub.push(caps.tts.onLine?.(({ id }) => { if (id && Reader.engine === "claude") { const n = +id.slice(1); if (Reader.segs[n]) { Reader.i = n; markSegment(n); } } }));
+    Reader.unsub.push(caps.tts.onState?.(({ state, reason }) => {
+      if (Reader.engine !== "claude") return;
+      if (state === "paused") { Reader.state = "paused"; updateBar(); }
+      else if (state === "speaking" && Reader.state === "paused") { Reader.state = "playing"; updateBar(); }
+      else if (state === "idle" && (reason === "viewer_stopped" || reason === "hidden" || reason === "time_limit")) stopReading();
+    }));
+    Reader.unsub = Reader.unsub.filter(Boolean);
+  }
+  Reader.segs.forEach((el, i) => {
+    const b = h(`<button type="button" class="say" aria-label="Écouter à partir d'ici" title="Écouter à partir d'ici">▶</button>`);
+    b.addEventListener("click", e => { e.stopPropagation(); Reader.follow = true; readFrom(i); });
+    const cible = el.tagName === "TR" ? el.cells[0] : el;
+    el.classList.add("speakable");
+    cible.insertBefore(b, cible.firstChild);
+  });
+  const btn = h(`<button class="btn small listen-btn needs-listen" type="button">🎧 Écouter la leçon</button>`);
+  btn.addEventListener("click", () => { if (Reader.state === "idle") { Reader.follow = true; readFrom(0); } else stopReading(); });
+  return btn;
 }
 
 /* ================================================================ vues */
@@ -2609,7 +2826,6 @@ function viewLesson(it) {
       <button class="btn done-btn" type="button"></button>
       ${next ? `<a class="btn primary" href="#${next}">${esc(shortLabel(next))} →</a>` : "<span></span>"}
     </div></article>`);
-  $(".lesson-tools", el).appendChild(listenButton(it));
   enhanceProse($(".prose", el), it.id);
   if (it.tasks.length) {
     const z = $(".tasks-zone", el);
@@ -2630,6 +2846,7 @@ function viewLesson(it) {
     it.exercises.forEach((ex, i) => z.appendChild(makeExercise(ex, i + 1, it)));
   }
   $(".tutor-zone", el).appendChild(lessonTutor(it));
+  $(".lesson-tools", el).appendChild(setupReader(el));
   const db = $(".done-btn", el);
   setDoneBtn(db, it);
   db.addEventListener("click", () => { if (S.done[it.id]) delete S.done[it.id]; else S.done[it.id] = true; save(); setDoneBtn(db, it); });
@@ -2713,6 +2930,7 @@ window.addEventListener("hashchange", () => { const r = route(); if (r !== lastR
   try { C = await (await fetch("content.json")).json(); }
   catch (e) { app().innerHTML = `<div class="boot">Le contenu n'a pas pu se charger. Recharge la page.</div>`; return; }
   indexContent();
+  if ("speechSynthesis" in window) document.body.classList.add("can-listen");
   lastRoute = route();
   render();
   connectStore();
@@ -2725,7 +2943,7 @@ window.addEventListener("hashchange", () => { const r = route(); if (r !== lastR
       const r = await caps.sample(arr, { cache: false });
       return r.text;
     };
-    window.claude.use("tts").then(t => { if (t) { caps.tts = t; document.body.classList.add("has-tts"); } }).catch(() => {});
+    window.claude.use("tts").then(t => { if (t) { caps.tts = t; document.body.classList.add("has-tts"); try { t.setRate?.(Reader.rate); } catch (e) {} if (C && C.items[route()]) render(); } }).catch(() => {});
   }
 })();
 

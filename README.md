@@ -10,6 +10,7 @@ Elle suit les modules officiels des programmes **Essentials AI**, **FullStack AI
 - **220 exercices** corrigés automatiquement (Python, pandas, SQL, machine learning, deep learning, Transformers, CLIP, diffusion, LoRA, RL, FastAPI, asyncio, MLflow, Docker, LangGraph, MCP, Kubernetes, Terraform, Airflow, dérive, garde-fous, GraphRAG, LLM, agents, RAG)
 - **11 projets** pour le portfolio, dont un mini-GPT avec cache KV, une API anti-fraude et un pipeline MLOps de surveillance, et **17 quiz**, dont un de préparation à l'AWS Cloud Practitioner
 - de vrais appels à un LLM depuis Python, et un tuteur IA dans chaque leçon
+- une lecture audio de chaque leçon : un bouton ▶ sur chaque paragraphe, une barre de lecture (pause, paragraphe suivant, vitesse) et le passage lu surligné
 - la carte complète des 3 programmes, dont toutes les sections sont couvertes
 
 ## Le style

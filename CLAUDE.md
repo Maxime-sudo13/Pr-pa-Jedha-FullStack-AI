@@ -11,7 +11,7 @@
 | `content/f1_poo.py`, `f3_infra.py`, `e_genai.py`, `f4_ml.py`, `f5_dl.py`, `f6_gen.py`, `f7_adapt.py`, `f8_mlops.py`, `f10_aieng.py`, `f11_carriere.py`, `l_infra.py`, `l_ops.py` | Les leçons des vagues 1 à 7 (format `LESSONS`, `PROJECTS`, `QUIZZES`) |
 | `labs/` | `brewly` (base SQLite), `fakeapi` (fausse API), `cloudsync` (base de connaissances RAG), `immo` (ventes d'appartements pour le ML), `paiements` (transactions et fraudes, avec dérive mensuelle via `mois=`), `minifast` (imitation de FastAPI avec TestClient), `llm` (appel d'un vrai LLM depuis Python, ou réponse simulée hors plateforme) |
 | `runner.py`, `pxshim.py` | Exécution des cellules et version simplifiée de plotly.express (navigateur) |
-| `web/src/` | L'application : `app.js` (vues, progression, Pyodide, tuteur), `viz.js` (animations), `base.css` et `extra.css` (mise en page), `cyber.css` (thème, chargé en dernier) |
+| `web/src/` | L'application : `app.js` (vues, progression, Pyodide, tuteur, lecteur audio `Reader`), `viz.js` (animations), `base.css` et `extra.css` (mise en page), `cyber.css` (thème, chargé en dernier) |
 | `web/assemble.py` | Assemble `web/src/` en un seul `web/index.html` |
 | `build.py` | Construit `dist/` : markdown → HTML, LaTeX → SVG, blocs ```` ```viz nom ```` → animations |
 | `test_all.py` | Teste tous les blocs de code et tous les exercices |

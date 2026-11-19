@@ -12,6 +12,10 @@ Elle suit les modules officiels des programmes **Essentials AI**, **FullStack AI
 - de vrais appels à un LLM depuis Python, et un tuteur IA dans chaque leçon
 - la carte complète des 3 programmes, dont toutes les sections sont couvertes
 
+## Le style
+
+Thème sombre unique, « cyber » : noir profond, bleu électrique et cyan, panneaux de verre, titres en dégradé lumineux, apparitions animées (désactivées si le système demande moins d'animations). Polices Space Grotesk, IBM Plex Sans et JetBrains Mono.
+
 ## Deux façons de l'utiliser
 
 1. **La plateforme web** (`web/` → `dist/`) : Python tourne dans le navigateur grâce à Pyodide.
@@ -32,7 +36,7 @@ jupyter notebook
 Il faut Python 3.10+ et Node.js 18+.
 
 ```bash
-pip install markdown numpy pandas scikit-learn
+pip install markdown numpy pandas scikit-learn scipy matplotlib pydantic
 cd tools && npm install && cd ..
 python web/assemble.py     # assemble l'application
 python build.py            # génère dist/
@@ -44,15 +48,17 @@ python -m http.server -d dist 8000
 
 Le workflow `.github/workflows/pages.yml` construit, teste et publie la plateforme à chaque push sur `main`. Pour l'activer : **Settings → Pages → Source : GitHub Actions**.
 
+Si un seul test échoue, rien n'est publié et le site garde sa version précédente : vérifie l'onglet **Actions** après chaque fusion (coche verte = site à jour, en 1 à 2 minutes).
+
 ## Structure
 
 | Chemin | Rôle |
 | --- | --- |
 | `content/parcours.py` | La carte des programmes Jedha et le plan de 11 semaines |
 | `content/*.py` | Les leçons, exercices (code de départ, corrigé, vérification, indice), projets et quiz |
-| `labs/` | Base SQLite Brewly, fausse API de livres, base de connaissances CloudSync, ventes immobilières Immo, accès au LLM |
+| `labs/` | Base SQLite Brewly, fausse API de livres, base de connaissances CloudSync, ventes immobilières Immo, paiements et fraudes (avec dérive mensuelle), mini-FastAPI `minifast`, accès au LLM |
 | `runner.py`, `pxshim.py` | Exécution des cellules et version simplifiée de plotly.express |
-| `web/src/` | L'application et ses animations, assemblées en `web/index.html` |
+| `web/src/` | L'application (`app.js`), ses 47 animations (`viz.js`) et ses styles (`base.css`, `extra.css`, puis `cyber.css` pour le thème), assemblés en `web/index.html` |
 | `build.py` | Transforme le contenu en `dist/content.json` (markdown, formules LaTeX, animations) |
 | `test_all.py` | Teste tous les corrigés et tous les blocs de code des leçons |
 | `make_notebooks.py` | Génère un notebook par module et `CORRIGES.md` |

@@ -3,6 +3,7 @@ jupyter
 numpy
 pandas
 scikit-learn
+scipy
 plotly
 matplotlib
 pydantic>=2

@@ -1895,6 +1895,61 @@ print(f"MAE : {mae_test:,.0f} €  ·  erreur médiane : {erreur_mediane_pct:.1f
 
 ## FullStack IA · Fondation pour l'apprentissage profond
 
+### Le neurone, les couches et les fonctions d'activation · Les activations et leurs dérivées
+
+```python
+import numpy as np
+
+def sigmoide(z):
+    return 1 / (1 + np.exp(-z))
+
+def d_sigmoide(z):
+    s = sigmoide(z)
+    return s * (1 - s)
+
+def relu(z):
+    return np.maximum(0, z)
+
+def d_relu(z):
+    return (z > 0).astype(float)
+
+z = np.array([-2.0, 0.0, 3.0])
+print(sigmoide(z), d_sigmoide(z), relu(z), d_relu(z))
+```
+
+### Le neurone, les couches et les fonctions d'activation · Une propagation avant
+
+```python
+import numpy as np
+
+def forward(X, W1, b1, W2, b2):
+    H = np.tanh(X @ W1 + b1)
+    Z = H @ W2 + b2
+    Z = Z - Z.max(axis=1, keepdims=True)
+    E = np.exp(Z)
+    return E / E.sum(axis=1, keepdims=True)
+
+rng = np.random.default_rng(1)
+X = rng.normal(size=(6, 4))
+W1, b1 = rng.normal(size=(4, 5)), np.zeros(5)
+W2, b2 = rng.normal(size=(5, 3)), np.zeros(3)
+P = forward(X, W1, b1, W2, b2)
+print(P.round(3), P.sum(axis=1))
+```
+
+### Le neurone, les couches et les fonctions d'activation · L'entropie croisée multiclasse
+
+```python
+import numpy as np
+
+def entropie_croisee(P, y):
+    p_vraie = np.clip(P[np.arange(len(y)), y], 1e-12, 1)
+    return -np.log(p_vraie).mean()
+
+P = np.array([[0.7, 0.2, 0.1], [0.1, 0.8, 0.1]])
+print(entropie_croisee(P, np.array([0, 1])))
+```
+
 ### Vecteurs et matrices · Prédire avec des poids
 
 ```python
@@ -1987,6 +2042,180 @@ print("w =", round(w, 4), " polyfit :", round(np.polyfit(xs, ys, 1)[0], 4))
 px.line(y=pertes, title="Courbe de perte")
 ```
 
+### Le perceptron, et sa limite · Une classe Perceptron réutilisable
+
+```python
+import numpy as np
+
+class Perceptron:
+    def __init__(self, eta=1.0, epoques=20):
+        self.eta, self.epoques = eta, epoques
+
+    def fit(self, X, y):
+        self.w_, self.b_ = np.zeros(X.shape[1]), 0.0
+        self.erreurs_ = []
+        for _ in range(self.epoques):
+            n = 0
+            for xi, yi in zip(X, y):
+                pred = 1 if xi @ self.w_ + self.b_ > 0 else 0
+                self.w_ += self.eta * (yi - pred) * xi
+                self.b_ += self.eta * (yi - pred)
+                n += int(pred != yi)
+            self.erreurs_.append(n)
+            if n == 0:
+                break
+        return self
+
+    def predict(self, X):
+        return (X @ self.w_ + self.b_ > 0).astype(int)
+
+X = np.array([[0, 0], [0, 1], [1, 0], [1, 1]], dtype=float)
+m = Perceptron().fit(X, np.array([0, 0, 0, 1]))
+print(m.predict(X), m.erreurs_)
+```
+
+### Réseau multicouche et rétropropagation · Les gradients d'un neurone
+
+```python
+import numpy as np
+
+def gradients(X, y, w, b):
+    p = 1 / (1 + np.exp(-(X @ w + b)))
+    dz = (p - y) / len(y)
+    return X.T @ dz, dz.sum()
+
+rng = np.random.default_rng(0)
+X = rng.normal(size=(20, 3))
+y = (X[:, 0] > 0).astype(float)
+w, b = rng.normal(size=3), 0.1
+print(gradients(X, y, w, b))
+```
+
+### Réseau multicouche et rétropropagation · Un MLP qui apprend le OU exclusif
+
+```python
+import numpy as np
+X = np.array([[0, 0], [0, 1], [1, 0], [1, 1]], dtype=float)
+y = np.array([[0], [1], [1], [0]], dtype=float)
+
+def entrainer_xor(epoques=3000, eta=0.5, graine=1):
+    rng = np.random.default_rng(graine)
+    W1, b1 = rng.normal(size=(2, 8)), np.zeros(8)
+    W2, b2 = rng.normal(size=(8, 1)), np.zeros(1)
+    pertes = []
+    for _ in range(epoques):
+        H = np.tanh(X @ W1 + b1)
+        P = 1 / (1 + np.exp(-(H @ W2 + b2)))
+        pertes.append(-np.mean(y * np.log(P) + (1 - y) * np.log(1 - P)))
+        dZ2 = (P - y) / len(X)
+        dZ1 = dZ2 @ W2.T * (1 - H ** 2)
+        W2 -= eta * H.T @ dZ2; b2 -= eta * dZ2.sum(axis=0)
+        W1 -= eta * X.T @ dZ1; b1 -= eta * dZ1.sum(axis=0)
+    return P, pertes
+
+P, pertes = entrainer_xor()
+print(P.ravel().round(3), round(pertes[-1], 4))
+```
+
+### Lire et écrire du PyTorch · Une couche linéaire avec rétropropagation
+
+```python
+import numpy as np
+
+class Lineaire:
+    def __init__(self, d, k, graine=0):
+        rng = np.random.default_rng(graine)
+        self.W = rng.normal(0, np.sqrt(2 / d), size=(d, k))
+        self.b = np.zeros(k)
+
+    def forward(self, x):
+        self.x = x
+        return x @ self.W + self.b
+
+    def backward(self, grad_sortie):
+        self.dW = self.x.T @ grad_sortie
+        self.db = grad_sortie.sum(axis=0)
+        return grad_sortie @ self.W.T
+
+c = Lineaire(4, 3)
+c.forward(np.ones((2, 4)))
+print(c.backward(np.ones((2, 3))).shape, c.dW.shape, c.db.shape)
+```
+
+### Les convolutions et les CNN · Convolution avec un pas
+
+```python
+import numpy as np
+
+def conv2d(image, filtre, pas=1):
+    k = filtre.shape[0]
+    h = (image.shape[0] - k) // pas + 1
+    w = (image.shape[1] - k) // pas + 1
+    sortie = np.zeros((h, w))
+    for i in range(h):
+        for j in range(w):
+            zone = image[i * pas:i * pas + k, j * pas:j * pas + k]
+            sortie[i, j] = (zone * filtre).sum()
+    return sortie
+
+img = np.arange(25, dtype=float).reshape(5, 5)
+print(conv2d(img, np.ones((3, 3))), conv2d(img, np.ones((3, 3)), pas=2))
+```
+
+### Les convolutions et les CNN · Max pooling
+
+```python
+import numpy as np
+
+def max_pool(carte, taille=2):
+    h, w = carte.shape[0] // taille, carte.shape[1] // taille
+    c = carte[:h * taille, :w * taille]
+    return c.reshape(h, taille, w, taille).max(axis=(1, 3))
+
+print(max_pool(np.arange(16).reshape(4, 4)))
+```
+
+### Les embeddings · Les plus proches voisins
+
+```python
+import numpy as np
+
+mots = {
+    "roi": np.array([0.9, 0.8, 0.9, 0.0]), "reine": np.array([0.9, -0.8, 0.9, 0.0]),
+    "homme": np.array([0.1, 0.8, 0.9, 0.0]), "femme": np.array([0.1, -0.8, 0.9, 0.0]),
+    "chat": np.array([0.0, 0.1, 0.1, 0.9]), "lion": np.array([0.6, 0.3, 0.0, 0.9]),
+}
+
+def voisins(mot, mots, k=2):
+    v = mots[mot]
+    cos = lambda a, b: a @ b / (np.linalg.norm(a) * np.linalg.norm(b))
+    autres = [m for m in mots if m != mot]
+    return sorted(autres, key=lambda m: cos(v, mots[m]), reverse=True)[:k]
+
+print(voisins("chat", mots), voisins("roi", mots, 3))
+```
+
+### Les embeddings · Résoudre une analogie
+
+```python
+import numpy as np
+
+mots = {
+    "roi": np.array([0.9, 0.8, 0.9, 0.0]), "reine": np.array([0.9, -0.8, 0.9, 0.0]),
+    "homme": np.array([0.1, 0.8, 0.9, 0.0]), "femme": np.array([0.1, -0.8, 0.9, 0.0]),
+    "prince": np.array([0.7, 0.8, 0.9, 0.1]), "princesse": np.array([0.7, -0.8, 0.9, 0.1]),
+    "chat": np.array([0.0, 0.1, 0.1, 0.9]), "lion": np.array([0.6, 0.3, 0.0, 0.9]),
+}
+
+def analogie(a, b, c, mots):
+    cible = mots[b] - mots[a] + mots[c]
+    cos = lambda u, v: u @ v / (np.linalg.norm(u) * np.linalg.norm(v))
+    candidats = [m for m in mots if m not in (a, b, c)]
+    return max(candidats, key=lambda m: cos(cible, mots[m]))
+
+print(analogie("homme", "roi", "femme", mots), analogie("roi", "prince", "reine", mots))
+```
+
 ### Projet 3 · Ta régression linéaire de A à Z · La classe RegressionGD
 
 ```python
@@ -2054,4 +2283,102 @@ y = df["body_mass_g"].to_numpy()
 modele = RegressionGD(eta=0.1, n_epoques=1000).fit(X, y)
 rmse = np.sqrt(((modele.predict(X) - y) ** 2).mean())
 print(f"RMSE : {rmse:.0f} g")
+```
+
+### Projet · Ton réseau de neurones from scratch · La classe MLP
+
+```python
+import numpy as np
+
+class MLP:
+    def __init__(self, d, cache, k, eta=0.1, epoques=300, graine=0):
+        rng = np.random.default_rng(graine)
+        self.W1 = rng.normal(0, np.sqrt(2 / d), (d, cache)); self.b1 = np.zeros(cache)
+        self.W2 = rng.normal(0, np.sqrt(2 / cache), (cache, k)); self.b2 = np.zeros(k)
+        self.k, self.eta, self.epoques = k, eta, epoques
+
+    def _forward(self, X):
+        Z1 = X @ self.W1 + self.b1
+        H = np.maximum(0, Z1)
+        Z2 = H @ self.W2 + self.b2
+        Z2 = Z2 - Z2.max(axis=1, keepdims=True)
+        P = np.exp(Z2) / np.exp(Z2).sum(axis=1, keepdims=True)
+        return Z1, H, P
+
+    def fit(self, X, y):
+        Y = np.eye(self.k)[y]
+        self.pertes_ = []
+        for _ in range(self.epoques):
+            Z1, H, P = self._forward(X)
+            self.pertes_.append(-np.log(np.clip(P[np.arange(len(y)), y], 1e-12, 1)).mean())
+            dZ2 = (P - Y) / len(X)
+            dZ1 = (dZ2 @ self.W2.T) * (Z1 > 0)
+            self.W2 -= self.eta * H.T @ dZ2; self.b2 -= self.eta * dZ2.sum(axis=0)
+            self.W1 -= self.eta * X.T @ dZ1; self.b1 -= self.eta * dZ1.sum(axis=0)
+        return self
+
+    def predict_proba(self, X):
+        return self._forward(X)[2]
+
+    def predict(self, X):
+        return self.predict_proba(X).argmax(axis=1)
+
+rng = np.random.default_rng(0)
+X = rng.normal(size=(150, 2)); y = (X[:, 0] * X[:, 1] > 0).astype(int)
+m = MLP(2, 16, 2, eta=0.5, epoques=500).fit(X, y)
+print((m.predict(X) == y).mean(), round(m.pertes_[-1], 3))
+```
+
+### Projet · Ton réseau de neurones from scratch · Classer les manchots
+
+```python
+import numpy as np
+import pandas as pd
+
+class MLP:
+    def __init__(self, d, cache, k, eta=0.1, epoques=300, graine=0):
+        rng = np.random.default_rng(graine)
+        self.W1 = rng.normal(0, np.sqrt(2 / d), (d, cache)); self.b1 = np.zeros(cache)
+        self.W2 = rng.normal(0, np.sqrt(2 / cache), (cache, k)); self.b2 = np.zeros(k)
+        self.k, self.eta, self.epoques = k, eta, epoques
+
+    def _forward(self, X):
+        Z1 = X @ self.W1 + self.b1
+        H = np.maximum(0, Z1)
+        Z2 = H @ self.W2 + self.b2
+        Z2 = Z2 - Z2.max(axis=1, keepdims=True)
+        P = np.exp(Z2) / np.exp(Z2).sum(axis=1, keepdims=True)
+        return Z1, H, P
+
+    def fit(self, X, y):
+        Y = np.eye(self.k)[y]
+        self.pertes_ = []
+        for _ in range(self.epoques):
+            Z1, H, P = self._forward(X)
+            self.pertes_.append(-np.log(np.clip(P[np.arange(len(y)), y], 1e-12, 1)).mean())
+            dZ2 = (P - Y) / len(X)
+            dZ1 = (dZ2 @ self.W2.T) * (Z1 > 0)
+            self.W2 -= self.eta * H.T @ dZ2; self.b2 -= self.eta * dZ2.sum(axis=0)
+            self.W1 -= self.eta * X.T @ dZ1; self.b1 -= self.eta * dZ1.sum(axis=0)
+        return self
+
+    def predict_proba(self, X):
+        return self._forward(X)[2]
+
+    def predict(self, X):
+        return self.predict_proba(X).argmax(axis=1)
+
+p = pd.read_csv("penguins.csv").dropna()
+cols = ["bill_length_mm", "bill_depth_mm", "flipper_length_mm", "body_mass_g"]
+classes = sorted(p["species"].unique())
+X = p[cols].to_numpy()
+y = p["species"].map({c: i for i, c in enumerate(classes)}).to_numpy()
+idx = np.random.default_rng(42).permutation(len(X))
+train, test = idx[:266], idx[266:]
+
+moy, ecart = X[train].mean(axis=0), X[train].std(axis=0)
+Xs = (X - moy) / ecart
+modele = MLP(4, 16, 3, eta=0.1, epoques=300).fit(Xs[train], y[train])
+acc_test = (modele.predict(Xs[test]) == y[test]).mean()
+print(f"Exactitude sur le test : {acc_test:.3f}")
 ```

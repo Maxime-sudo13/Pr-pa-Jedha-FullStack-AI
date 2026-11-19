@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Prépa FullStack AI</title>
+<title>Prépa AI</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
@@ -396,7 +396,7 @@ table.df tbody th { color: var(--muted); font-weight: 500; }
 <header class="top">
   <div class="top-in">
     <a class="back" id="back" href="#accueil" hidden>← <span>Accueil</span></a>
-    <a class="brand" id="brand" href="#accueil">Prépa FullStack AI<small>ESSENTIALS · FULLSTACK · LEAD</small></a>
+    <a class="brand" id="brand" href="#accueil">Prépa AI<small>ESSENTIALS · FULLSTACK · LEAD</small></a>
     <div class="spacer"></div>
     <div class="pill tab" title="Progression globale"><div class="meter"><i id="gmeter" style="width:0%"></i></div><span id="gpct">0 %</span></div>
   </div>
@@ -1010,6 +1010,145 @@ VIZ.kmeans = el => {
   init();
 };
 
+/* ---------- un neurone ---------- */
+VIZ.neuron = el => {
+  const { body, ctrl, note } = vizShell(el, "Un neurone, en direct", "deep learning");
+  const x1 = rangeCtl(ctrl, `nx1${++vizUid}`, "x₁", -2, 2, 0.1, 1, v => v.toFixed(1));
+  const x2 = rangeCtl(ctrl, `nx2${vizUid}`, "x₂", -2, 2, 0.1, 0.5, v => v.toFixed(1));
+  const w1 = rangeCtl(ctrl, `nw1${vizUid}`, "w₁", -3, 3, 0.1, 1.5, v => v.toFixed(1));
+  const w2 = rangeCtl(ctrl, `nw2${vizUid}`, "w₂", -3, 3, 0.1, -2, v => v.toFixed(1));
+  const b = rangeCtl(ctrl, `nb${vizUid}`, "b", -3, 3, 0.1, 0.2, v => v.toFixed(1));
+  const sel = h(`<label for="na${vizUid}">Activation <select id="na${vizUid}" class="btn small"><option value="relu">ReLU</option><option value="sig">sigmoïde</option><option value="tanh">tanh</option></select></label>`); ctrl.appendChild(sel);
+  const F = { relu: z => Math.max(0, z), sig: z => 1 / (1 + Math.exp(-z)), tanh: Math.tanh };
+  const draw = () => {
+    const a = $("select", sel).value, f = F[a], z = +x1.value * +w1.value + +x2.value * +w2.value + +b.value, out = f(z);
+    const X = v => 330 + (v + 5) / 10 * 250, lo = a === "relu" ? -0.5 : -1.2, hi = a === "relu" ? 5 : 1.2, Y = v => 200 - (v - lo) / (hi - lo) * 180;
+    let curve = ""; for (let v = -5; v <= 5; v += .1) curve += `${curve ? "L" : "M"}${X(v)} ${Y(f(v))} `;
+    body.innerHTML = `<svg viewBox="0 0 600 220">
+      <circle cx="40" cy="60" r="20" class="vz-code" stroke="var(--line)"/><text x="40" y="65" text-anchor="middle" class="vz-tc">${(+x1.value).toFixed(1)}</text>
+      <circle cx="40" cy="150" r="20" class="vz-code" stroke="var(--line)"/><text x="40" y="155" text-anchor="middle" class="vz-tc">${(+x2.value).toFixed(1)}</text>
+      <line x1="60" y1="60" x2="190" y2="105" class="${+w1.value >= 0 ? "vz-sacc" : "vz-serr"}" stroke-width="${1 + Math.abs(+w1.value) * 1.5}"/>
+      <line x1="60" y1="150" x2="190" y2="105" class="${+w2.value >= 0 ? "vz-sacc" : "vz-serr"}" stroke-width="${1 + Math.abs(+w2.value) * 1.5}"/>
+      <text x="115" y="70" class="vz-tm">w₁ = ${(+w1.value).toFixed(1)}</text><text x="115" y="150" class="vz-tm">w₂ = ${(+w2.value).toFixed(1)}</text>
+      <circle cx="215" cy="105" r="28" class="vz-accent"/><text x="215" y="111" text-anchor="middle" style="font:600 17px var(--body);fill:var(--surface)">Σ + b</text><text x="215" y="152" text-anchor="middle" class="vz-tc">z = ${z.toFixed(2)}</text>
+      <line x1="243" y1="105" x2="300" y2="105" class="vz-smuted" stroke-width="2"/><text x="270" y="96" text-anchor="middle" class="vz-tm">f</text>
+      <line x1="330" x2="580" y1="${Y(0)}" y2="${Y(0)}" class="vz-line"/><line x1="${X(0)}" x2="${X(0)}" y1="15" y2="200" class="vz-line"/>
+      <path d="${curve}" fill="none" class="vz-sink" stroke-width="2"/>
+      <circle cx="${X(Math.max(-5, Math.min(5, z)))}" cy="${Y(out)}" r="7" class="vz-mark" stroke="var(--ink)" stroke-width="1.5"/>
+      <text x="455" y="214" text-anchor="middle" class="vz-tm">sortie a = f(z) = ${out.toFixed(3)}</text></svg>`;
+    note.innerHTML = `z = ${(+x1.value).toFixed(1)} × ${(+w1.value).toFixed(1)} + ${(+x2.value).toFixed(1)} × ${(+w2.value).toFixed(1)} + ${(+b.value).toFixed(1)} = <b>${z.toFixed(2)}</b>, puis a = ${a === "relu" ? "ReLU" : a === "sig" ? "sigmoïde" : "tanh"}(z) = <b>${out.toFixed(3)}</b>. Les traits bleus sont des poids positifs, les rouges des poids négatifs ; leur épaisseur suit leur valeur.`;
+  };
+  $$("input", ctrl).forEach(i => i.addEventListener("input", draw)); $("select", sel).addEventListener("change", draw); draw();
+};
+
+/* ---------- le OU exclusif ---------- */
+VIZ.xor = el => {
+  const { body, ctrl, note } = vizShell(el, "Une droite peut-elle séparer les classes ?", "perceptron");
+  const ang = rangeCtl(ctrl, `xa${++vizUid}`, "Angle", 0, 180, 1, 135, v => v + "°");
+  const off = rangeCtl(ctrl, `xo${vizUid}`, "Position", -1, 1.5, 0.01, 0.75, v => v.toFixed(2));
+  const sel = h(`<label for="xs${vizUid}">Données <select id="xs${vizUid}" class="btn small"><option value="et">ET</option><option value="ou">OU</option><option value="xor" selected>OU exclusif</option></select></label>`); ctrl.appendChild(sel);
+  const Y = { et: [0, 0, 0, 1], ou: [0, 1, 1, 1], xor: [0, 1, 1, 0] }, P = [[0, 0], [0, 1], [1, 0], [1, 1]];
+  const draw = () => {
+    const t = +ang.value * Math.PI / 180, n = [Math.cos(t), Math.sin(t)], c = +off.value, y = Y[$("select", sel).value];
+    const S = v => 90 + v * 300, T = v => 330 - v * 300;
+    const pred = P.map(p => (p[0] * n[0] + p[1] * n[1] > c ? 1 : 0)), ok = pred.every((v, i) => v === y[i]) || pred.every((v, i) => v !== y[i]);
+    const d = [-n[1], n[0]], p0 = [n[0] * c, n[1] * c];
+    let svg = `<svg viewBox="0 0 600 380"><rect x="60" y="0" width="360" height="360" class="vz-code" rx="8"/>`;
+    svg += `<line x1="${S(p0[0] - d[0] * 3)}" y1="${T(p0[1] - d[1] * 3)}" x2="${S(p0[0] + d[0] * 3)}" y2="${T(p0[1] + d[1] * 3)}" class="vz-sink" stroke-width="2.5"/>`;
+    P.forEach((p, i) => { svg += y[i] ? `<rect x="${S(p[0]) - 14}" y="${T(p[1]) - 14}" width="28" height="28" class="vz-mark" stroke="var(--ink)" stroke-width="1.5"/>` : `<circle cx="${S(p[0])}" cy="${T(p[1])}" r="14" class="vz-accent"/>`; svg += `<text x="${S(p[0])}" y="${T(p[1]) + 34}" text-anchor="middle" class="vz-tm">(${p[0]}, ${p[1]})</text>`; });
+    svg += `<text x="440" y="40" class="vz-tb">${ok ? "✓ Séparé" : "✗ Pas séparé"}</text><text x="440" y="62" class="vz-tm">■ classe 1   ● classe 0</text></svg>`;
+    body.innerHTML = svg;
+    note.innerHTML = $("select", sel).value === "xor" ? "Tourne et déplace la droite autant que tu veux : aucune position ne sépare les carrés des ronds. C'est pourquoi il faut une <b>couche cachée</b>." : ok ? "Une droite suffit : un seul neurone (perceptron) peut apprendre cette fonction." : "Cherche la bonne position : une solution existe.";
+  };
+  [ang, off].forEach(i => i.addEventListener("input", draw)); $("select", sel).addEventListener("change", draw); draw();
+};
+
+/* ---------- un réseau qui apprend en direct ---------- */
+VIZ.mlp = el => {
+  const { body, ctrl, note } = vizShell(el, "Un réseau apprend une frontière courbe", "rétropropagation");
+  const r = mulberry(4), data = [];
+  for (let i = 0; i < 120; i++) { const a = r() * Math.PI, c = i % 2, x = c ? 1 - Math.cos(a) : Math.cos(a), y = c ? 0.5 - Math.sin(a) : Math.sin(a); data.push([Math.max(-1.33, Math.min(1.33, (x - 0.5) / 1.25 + gauss(r) * 0.08)), Math.max(-1.05, Math.min(1.05, (y - 0.25) / 1.25 + gauss(r) * 0.08)), c]); }
+  const H = rangeCtl(ctrl, `mh${++vizUid}`, "Neurones cachés", 1, 16, 1, 8);
+  const go = btnCtl(ctrl, "Entraîner", "btn small primary"), rst = btnCtl(ctrl, "Réinitialiser");
+  let net, ep, loss, timer = null;
+  const init = () => { const n = +H.value, rr = mulberry(1); net = { W1: Array.from({ length: 2 }, () => Array.from({ length: n }, () => gauss(rr) * 1.2)), b1: Array(n).fill(0), W2: Array.from({ length: n }, () => gauss(rr) * 0.8), b2: 0, n }; ep = 0; loss = null; };
+  const fwd = (x, y) => { const h = net.b1.map((b, j) => Math.tanh(x * net.W1[0][j] + y * net.W1[1][j] + b)); const z = h.reduce((a, v, j) => a + v * net.W2[j], net.b2); return [h, 1 / (1 + Math.exp(-z))]; };
+  const train = steps => {
+    for (let s = 0; s < steps; s++) {
+      const g = { W1: [Array(net.n).fill(0), Array(net.n).fill(0)], b1: Array(net.n).fill(0), W2: Array(net.n).fill(0), b2: 0 }; let L = 0;
+      for (const [x, y, c] of data) { const [h, p] = fwd(x, y); L -= c ? Math.log(p + 1e-9) : Math.log(1 - p + 1e-9); const dz = (p - c) / data.length; g.b2 += dz; for (let j = 0; j < net.n; j++) { g.W2[j] += dz * h[j]; const dh = dz * net.W2[j] * (1 - h[j] * h[j]); g.W1[0][j] += dh * x; g.W1[1][j] += dh * y; g.b1[j] += dh; } }
+      const lr = 1.0; net.b2 -= lr * g.b2; for (let j = 0; j < net.n; j++) { net.W2[j] -= lr * g.W2[j]; net.W1[0][j] -= lr * g.W1[0][j]; net.W1[1][j] -= lr * g.W1[1][j]; net.b1[j] -= lr * g.b1[j]; }
+      loss = L / data.length; ep++;
+    }
+  };
+  const draw = () => {
+    const S = 26, X = v => 30 + (v + 1.4) / 2.8 * 540, Y = v => 260 - (v + 1.1) / 2.2 * 250;
+    let svg = `<svg viewBox="0 0 600 270" shape-rendering="crispEdges">`;
+    for (let i = 0; i < S; i++) for (let j = 0; j < S; j++) { const x = -1.4 + (i + .5) * 2.8 / S, y = -1.1 + (j + .5) * 2.2 / S, p = fwd(x, y)[1]; svg += `<rect x="${X(-1.4 + i * 2.8 / S)}" y="${Y(-1.1 + (j + 1) * 2.2 / S)}" width="${540 / S + 1}" height="${250 / S + 1}" class="${p > .5 ? "vz-mark" : "vz-accent"}" fill-opacity="${(0.08 + Math.abs(p - .5) * 0.5).toFixed(2)}"/>`; }
+    svg += `<g shape-rendering="auto">`;
+    data.forEach(([x, y, c]) => { svg += c ? `<rect x="${X(x) - 4}" y="${Y(y) - 4}" width="8" height="8" class="vz-mark" stroke="var(--ink)" stroke-width=".8"/>` : `<circle cx="${X(x)}" cy="${Y(y)}" r="4" class="vz-accent" stroke="var(--surface)" stroke-width=".8"/>`; });
+    body.innerHTML = svg + "</g></svg>";
+    const acc = data.filter(([x, y, c]) => (fwd(x, y)[1] > .5 ? 1 : 0) === c).length / data.length;
+    note.innerHTML = `Époque <b>${ep}</b>${loss != null ? ` · perte <b>${loss.toFixed(3)}</b>` : ""} · exactitude <b>${(acc * 100).toFixed(0)} %</b>. Le fond montre la probabilité prédite en chaque point : à chaque époque, la rétropropagation déforme la frontière. ${+H.value <= 2 ? "Avec 1 ou 2 neurones cachés, la frontière reste presque droite." : ""}`;
+  };
+  go.addEventListener("click", () => { if (timer) { clearInterval(timer); timer = null; go.textContent = "Entraîner"; return; } go.textContent = "Pause"; timer = setInterval(() => { if (!el.isConnected || ep >= 3000) { clearInterval(timer); timer = null; go.textContent = "Entraîner"; return; } train(20); draw(); }, 60); });
+  rst.addEventListener("click", () => { init(); draw(); }); H.addEventListener("change", () => { init(); draw(); });
+  init(); draw();
+};
+
+/* ---------- convolution ---------- */
+VIZ.conv = el => {
+  const { body, ctrl, note } = vizShell(el, "Un filtre qui glisse sur l'image", "convolution");
+  const IMG = ["0000000000", "0001111000", "0011001100", "0011001100", "0000011000", "0000110000", "0001100000", "0011000000", "0011111100", "0000000000"].map(r => [...r].map(Number));
+  const K = { "Bord vertical": [[-1, 0, 1], [-1, 0, 1], [-1, 0, 1]], "Bord horizontal": [[-1, -1, -1], [0, 0, 0], [1, 1, 1]], "Flou": [[1, 1, 1], [1, 1, 1], [1, 1, 1]].map(r => r.map(v => v / 9)), "Netteté": [[0, -1, 0], [-1, 5, -1], [0, -1, 0]] };
+  let kname = "Bord vertical", pos = 0, timer = null;
+  const n = 8;
+  const out = () => { const k = K[kname]; return Array.from({ length: n }, (_, i) => Array.from({ length: n }, (_, j) => { let s = 0; for (let a = 0; a < 3; a++) for (let b = 0; b < 3; b++) s += IMG[i + a][j + b] * k[a][b]; return s; })); };
+  const draw = () => {
+    const O = out(), mx = Math.max(...O.flat().map(Math.abs)) || 1, pi = Math.floor(pos / n), pj = pos % n, k = K[kname];
+    const cell = 22;
+    let svg = `<svg viewBox="0 0 600 250"><text x="10" y="14" class="vz-tm">image 10 × 10</text>`;
+    IMG.forEach((r, i) => r.forEach((v, j) => { svg += `<rect x="${10 + j * cell}" y="${20 + i * cell}" width="${cell - 1}" height="${cell - 1}" style="fill:${v ? "var(--ink)" : "var(--code-bg)"}"/>`; }));
+    svg += `<rect x="${10 + pj * cell - 1}" y="${20 + pi * cell - 1}" width="${3 * cell + 1}" height="${3 * cell + 1}" fill="none" class="vz-sacc" stroke-width="3"/>`;
+    svg += `<text x="262" y="14" class="vz-tm">filtre 3 × 3</text>`;
+    k.forEach((r, a) => r.forEach((v, b) => { svg += `<rect x="${262 + b * 28}" y="${20 + a * 28}" width="27" height="27" class="vz-code" stroke="var(--line)"/><text x="${276 + b * 28}" y="${38 + a * 28}" text-anchor="middle" class="vz-tm">${Number.isInteger(v) ? v : v.toFixed(2)}</text>`; }));
+    svg += `<text x="262" y="132" class="vz-tc">= ${O[pi][pj].toFixed(2)}</text>`;
+    svg += `<text x="370" y="14" class="vz-tm">carte de sortie 8 × 8</text>`;
+    O.forEach((r, i) => r.forEach((v, j) => { const done = i * n + j <= pos; svg += `<rect x="${370 + j * 27}" y="${20 + i * 27}" width="26" height="26" class="${v >= 0 ? "vz-accent" : "vz-err"}" fill-opacity="${done ? (0.08 + Math.abs(v) / mx * 0.92).toFixed(2) : 0.03}" ${i === pi && j === pj ? 'stroke="var(--ink)" stroke-width="2"' : ""}/>`; }));
+    body.innerHTML = svg + "</svg>";
+    note.innerHTML = `Position (${pi}, ${pj}) : on multiplie la zone encadrée par le filtre, terme à terme, et on additionne. ` + ({ "Bord vertical": "Ce filtre réagit aux changements de gauche à droite : bleu = passage du clair au foncé, rouge = l'inverse.", "Bord horizontal": "Ce filtre réagit aux changements de haut en bas.", "Flou": "Chaque pixel devient la moyenne de ses voisins.", "Netteté": "Le pixel central est renforcé par rapport à ses voisins." })[kname];
+  };
+  const sel = h(`<label for="ck${++vizUid}">Filtre <select id="ck${vizUid}" class="btn small">${Object.keys(K).map(k => `<option>${k}</option>`).join("")}</select></label>`); ctrl.appendChild(sel);
+  $("select", sel).addEventListener("change", e => { kname = e.target.value; draw(); });
+  btnCtl(ctrl, "Position suivante").addEventListener("click", () => { pos = (pos + 1) % (n * n); draw(); });
+  const play = btnCtl(ctrl, "Balayer toute l'image", "btn small primary");
+  play.addEventListener("click", () => { if (timer) { clearInterval(timer); timer = null; return; } pos = 0; timer = setInterval(() => { if (!el.isConnected || pos >= n * n - 1) { clearInterval(timer); timer = null; return; } pos++; draw(); }, reduceMotion() ? 1 : 60); });
+  draw();
+};
+
+/* ---------- embeddings et analogies ---------- */
+VIZ.embed = el => {
+  const { body, ctrl, note } = vizShell(el, "L'arithmétique des embeddings", "embeddings");
+  const W = { roi: [0.55, 0.75], reine: [0.85, 0.35], homme: [-0.35, 0.45], femme: [-0.05, 0.05], prince: [0.45, 0.6], princesse: [0.75, 0.2],
+    Paris: [-0.75, -0.25], France: [-0.45, -0.75], Rome: [-0.95, -0.45], Italie: [-0.65, -0.95], Berlin: [-0.55, -0.1], Allemagne: [-0.25, -0.6], chat: [0.5, -0.5], chien: [0.6, -0.65] };
+  const AN = [["homme", "roi", "femme"], ["France", "Paris", "Italie"], ["France", "Paris", "Allemagne"], ["roi", "prince", "reine"]];
+  const sel = h(`<label for="ea${++vizUid}">Analogie <select id="ea${vizUid}" class="btn small">${AN.map((a, i) => `<option value="${i}">${a[1]} − ${a[0]} + ${a[2]}</option>`).join("")}</select></label>`); ctrl.appendChild(sel);
+  const draw = () => {
+    const [a, b, c] = AN[+$("select", sel).value], t = [W[b][0] - W[a][0] + W[c][0], W[b][1] - W[a][1] + W[c][1]];
+    const cos = (u, v) => (u[0] * v[0] + u[1] * v[1]) / (Math.hypot(...u) * Math.hypot(...v));
+    const best = Object.keys(W).filter(m => ![a, b, c].includes(m)).sort((m, n) => Math.hypot(W[m][0] - t[0], W[m][1] - t[1]) - Math.hypot(W[n][0] - t[0], W[n][1] - t[1]))[0];
+    const X = v => 300 + v * 230, Y = v => 130 - v * 110;
+    let svg = `<svg viewBox="0 0 600 260"><defs><marker id="ar${vizUid}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10z" style="fill:var(--accent)"/></marker></defs>`;
+    svg += `<line x1="${X(W[a][0])}" y1="${Y(W[a][1])}" x2="${X(W[b][0])}" y2="${Y(W[b][1])}" class="vz-sacc" stroke-width="2" marker-end="url(#ar${vizUid})"/>`;
+    svg += `<line x1="${X(W[c][0])}" y1="${Y(W[c][1])}" x2="${X(t[0])}" y2="${Y(t[1])}" class="vz-sacc" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#ar${vizUid})"/>`;
+    for (const [m, v] of Object.entries(W)) { const hl = [a, b, c].includes(m), win = m === best; svg += `<circle cx="${X(v[0])}" cy="${Y(v[1])}" r="${win ? 8 : 5}" class="${win ? "vz-ok" : hl ? "vz-accent" : "vz-muted"}"/><text x="${X(v[0]) + 10}" y="${Y(v[1]) + 4}" style="font:${hl || win ? 600 : 400} 12px var(--body);fill:var(--${hl || win ? "ink" : "muted"})">${m}</text>`; }
+    svg += `<rect x="${X(t[0]) - 6}" y="${Y(t[1]) - 6}" width="12" height="12" class="vz-mark" stroke="var(--ink)"/></svg>`;
+    body.innerHTML = svg;
+    note.innerHTML = `Le vecteur de <b>${a}</b> à <b>${b}</b> (flèche pleine) est appliqué à partir de <b>${c}</b> (flèche pointillée). Le point d'arrivée (carré jaune) est le plus proche de <b>${best}</b>. Les vrais embeddings ont des centaines de dimensions : ici, une projection en 2D pour l'intuition.`;
+  };
+  $("select", sel).addEventListener("change", draw); draw();
+};
+
 "use strict";
 /* ================================================================ utilitaires */
 const $ = (s, r = document) => r.querySelector(s);
@@ -1557,7 +1696,7 @@ function viewHome() {
     <div class="plan" role="list" style="--n:${C.plan.length}">${C.plan.map(w => { const s = statsOf(weekIds(w)); return `<button class="wk ${w.semaine === cw ? "cur" : ""}" type="button" data-w="${w.semaine}" role="listitem"><span class="n">S${w.semaine}</span><span class="t">${esc(w.titre)}</span><div class="bar"><i style="width:${s.p}%"></i></div></button>`; }).join("")}</div>
     <div class="card wkdetail"></div>
     <div class="section-h"><h2>Les programmes</h2><p>Les modules officiels, et ce que la plateforme couvre déjà</p></div>
-    <div class="tabs" role="tablist">${C.tracks.map(t => `<button role="tab" type="button" data-t="${t.id}" aria-selected="${t.id === T.id}">${esc(t.nom)}<span class="tag">${t.inscrit ? "inscrit" : "bonus"}</span></button>`).join("")}</div>
+    <div class="tabs" role="tablist">${C.tracks.map(t => `<button role="tab" type="button" data-t="${t.id}" aria-selected="${t.id === T.id}">${esc(t.nom)}</button>`).join("")}</div>
     <p class="muted" style="margin:0 0 12px">${esc(T.intro)}</p>
     <section class="modules">${T.modules.map(moduleCard).join("")}</section>
     <section class="extras">

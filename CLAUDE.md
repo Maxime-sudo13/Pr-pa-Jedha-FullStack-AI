@@ -8,7 +8,7 @@
 | --- | --- |
 | `content/parcours.py` | La carte des 3 programmes Jedha : modules, sections officielles, leçons qui les couvrent, plan de 11 semaines |
 | `content/w1.py` … `w4.py` | Les 25 premières leçons (format `WEEK`) |
-| `content/f1_poo.py`, `f3_infra.py`, `e_genai.py`, `f4_ml.py`, `f5_dl.py` | Les leçons des vagues 1 à 4 (format `LESSONS`, `PROJECTS`, `QUIZZES`) |
+| `content/f1_poo.py`, `f3_infra.py`, `e_genai.py`, `f4_ml.py`, `f5_dl.py`, `f6_gen.py`, `f7_adapt.py` | Les leçons des vagues 1 à 5 (format `LESSONS`, `PROJECTS`, `QUIZZES`) |
 | `labs/` | `brewly` (base SQLite), `fakeapi` (fausse API), `cloudsync` (base de connaissances RAG), `immo` (ventes d'appartements pour le ML), `llm` (appel d'un vrai LLM depuis Python, ou réponse simulée hors plateforme) |
 | `runner.py`, `pxshim.py` | Exécution des cellules et version simplifiée de plotly.express (navigateur) |
 | `web/src/` | L'application : `app.js` (vues, progression, Pyodide, tuteur), `viz.js` (animations), CSS |
@@ -37,9 +37,9 @@
 2. Essentials : LLM, prompts, tokens, agents, workflows, évaluation, n8n, RAG, projet Demo Day.
 3. Machine learning : prétraitement avancé, Ridge et Lasso, grid search, arbres et forêts, boosting, séries temporelles, K-means, projet immobilier.
 4. Deep learning : neurone et activations, perceptron, rétropropagation, PyTorch, convolutions, embeddings, MLP from scratch.
+5. Architectures génératives et adaptation (F6, F7) : attention, Transformer en NumPy, tokenisation, Hugging Face, CLIP, diffusion, projet mini-GPT avec cache KV, LoRA et QLoRA, apprentissage par renforcement, RLHF et DPO.
 
 ## Prochaines vagues prévues
 
-5. Architectures génératives : attention et Transformer en NumPy, tokenisation, CLIP, diffusion.
 6. Ingénierie ML et IA : asynchrone, FastAPI, Docker, MLflow, LangChain, MCP.
 7. Lead : gouvernance, tests et CI/CD, surveillance de la dérive, LLMOps, sécurité.

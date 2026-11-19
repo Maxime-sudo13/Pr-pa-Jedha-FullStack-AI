@@ -26,7 +26,7 @@ TRACKS = [
   {"id": "e4", "titre": "Demo Day", "jours": 3, "semaine": 2,
    "objectif": "Créer et présenter une application d'IA.",
    "sections": [S("Créer ton pipeline d'IA automatisé", ["p-ess"])], "quiz": [], "projets": ["p-ess"]},
- ]},{"id": "fullstack", "nom": "FullStack IA", "jours": 60, "inscrit": True,
+ ]},{"id": "fullstack", "nom": "FullStack AI", "jours": 60, "inscrit": True,
  "intro": "Ton programme principal : de Python au déploiement d'applications d'IA générative en production.",
  "modules": [
   {"id": "f0", "titre": "Préparer ta formation", "jours": None, "semaine": 1,

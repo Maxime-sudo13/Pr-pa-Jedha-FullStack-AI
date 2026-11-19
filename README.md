@@ -2,7 +2,7 @@
 
 J'ai créé une plateforme d'apprentissage pour me préparer à la formation FullStack AI chez Jedha 💻🚀
 
-Elle suit les modules officiels des programmes **Essentials AI**, **FullStack IA** et **Lead AI** de Jedha, avec un plan de 11 semaines à 20 h et plus.
+Elle suit les modules officiels des programmes **Essentials AI**, **FullStack AI** et **Lead AI** de Jedha, avec un plan de 11 semaines à 20 h et plus.
 
 - **55 leçons** avec du code exécutable dans le navigateur et **26 animations interactives**
 - **128 exercices** corrigés automatiquement (Python, pandas, SQL, machine learning, deep learning, LLM, agents, RAG)

@@ -1,6 +1,6 @@
 # Instructions pour Claude Code
 
-**Prépa AI** : plateforme de préparation aux formations de Jedha, dans l'ordre Essentials AI (en premier, en bonus), puis **FullStack IA** et **Lead AI**. L'apprenant est francophone, adulte, en reconversion, et vise un très haut niveau. On le tutoie.
+**Prépa AI** : plateforme de préparation aux formations de Jedha, dans l'ordre Essentials AI (en premier, en bonus), puis **FullStack AI** et **Lead AI**. L'apprenant est francophone, adulte, en reconversion, et vise un très haut niveau. On le tutoie.
 
 ## Architecture
 

@@ -392,7 +392,7 @@ function mdLite(s) {
   });
   return html;
 }
-const TUTOR_ROLE = "Tu es le tuteur d'une plateforme de préparation pour un adulte francophone en reconversion, inscrit aux formations FullStack IA puis Lead AI de Jedha. Il vise un très haut niveau. Tu le tutoies, tu es chaleureux, exigeant, précis et bref. Tu réponds en français.";
+const TUTOR_ROLE = "Tu es le tuteur d'une plateforme de préparation pour un adulte francophone en reconversion, inscrit aux formations FullStack AI puis Lead AI de Jedha. Il vise un très haut niveau. Tu le tutoies, tu es chaleureux, exigeant, précis et bref. Tu réponds en français.";
 async function askClaude(input, target) {
   if (!caps.sample) return;
   target.innerHTML = `<div class="loading"><span class="spin"></span>Le tuteur réfléchit…</div>`;
@@ -522,7 +522,7 @@ function viewHome() {
   const el = h(`<div>
     <section class="hero">
       <div>
-        <div class="eyebrow">Essentials → FullStack IA → Lead AI · ${C.plan.length} semaines de préparation</div>
+        <div class="eyebrow">Essentials → FullStack → Lead<br>${C.plan.length} semaines de préparation</div>
         <h1>Arrive chez Jedha <span class="mark">avec une longueur d'avance</span>.</h1>
         <p class="lede">La plateforme suit les modules officiels de tes programmes. Chaque leçon s'exécute ici même, chaque exercice est corrigé automatiquement, et un tuteur IA t'accompagne.</p>
         <div class="jday"><label for="start">Début de la formation</label><input type="date" id="start" value="${S.start || ""}"> <span>${jtxt}</span></div>

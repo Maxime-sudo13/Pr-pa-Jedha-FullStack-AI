@@ -545,7 +545,7 @@ function viewHome() {
     <div class="plan" role="list" style="--n:${C.plan.length}">${C.plan.map(w => { const s = statsOf(weekIds(w)); return `<button class="wk ${w.semaine === cw ? "cur" : ""}" type="button" data-w="${w.semaine}" role="listitem"><span class="n">S${w.semaine}</span><span class="t">${esc(w.titre)}</span><div class="bar"><i style="width:${s.p}%"></i></div></button>`; }).join("")}</div>
     <div class="card wkdetail"></div>
     <div class="section-h"><h2>Les programmes</h2><p>Les modules officiels, et ce que la plateforme couvre déjà</p></div>
-    <div class="tabs" role="tablist">${C.tracks.map(t => `<button role="tab" type="button" data-t="${t.id}" aria-selected="${t.id === T.id}">${esc(t.nom)}<span class="tag">${t.inscrit ? "inscrit" : "bonus"}</span></button>`).join("")}</div>
+    <div class="tabs" role="tablist">${C.tracks.map(t => `<button role="tab" type="button" data-t="${t.id}" aria-selected="${t.id === T.id}">${esc(t.nom)}</button>`).join("")}</div>
     <p class="muted" style="margin:0 0 12px">${esc(T.intro)}</p>
     <section class="modules">${T.modules.map(moduleCard).join("")}</section>
     <section class="extras">

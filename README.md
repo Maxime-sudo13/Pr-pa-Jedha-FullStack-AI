@@ -1,12 +1,12 @@
-# Prépa FullStack AI
+# Prépa AI
 
 J'ai créé une plateforme d'apprentissage pour me préparer à la formation FullStack AI chez Jedha 💻🚀
 
 Elle suit les modules officiels des programmes **Essentials AI**, **FullStack IA** et **Lead AI** de Jedha, avec un plan de 11 semaines à 20 h et plus.
 
-- **49 leçons** avec du code exécutable dans le navigateur et **21 animations interactives**
-- **115 exercices** corrigés automatiquement (Python, pandas, SQL, machine learning, LLM, agents, RAG)
-- **7 projets** pour le portfolio et **10 quiz**, dont un de préparation à l'AWS Cloud Practitioner
+- **55 leçons** avec du code exécutable dans le navigateur et **26 animations interactives**
+- **128 exercices** corrigés automatiquement (Python, pandas, SQL, machine learning, deep learning, LLM, agents, RAG)
+- **8 projets** pour le portfolio et **11 quiz**, dont un de préparation à l'AWS Cloud Practitioner
 - de vrais appels à un LLM depuis Python, et un tuteur IA dans chaque leçon
 - la carte complète des 3 programmes : ce qui est préparé, ce qui arrive
 

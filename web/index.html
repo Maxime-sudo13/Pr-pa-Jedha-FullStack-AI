@@ -1149,6 +1149,234 @@ VIZ.embed = el => {
   $("select", sel).addEventListener("change", draw); draw();
 };
 
+/* ================================================================ vague 5 : architectures génératives et adaptation */
+const ATT_TOK = ["Le", "chat", "dort", "sur", "le", "tapis", "car", "il", "est", "fatigué"];
+function attLogits(lien) {
+  const n = ATT_TOK.length, L = Array.from({ length: n }, (_, i) => Array.from({ length: n }, (_, j) => (i === j ? 1.2 : 0) + (j === i - 1 ? 0.6 : 0)));
+  for (const [i, j, v] of lien) L[i][j] += v;
+  return L;
+}
+const ATT_MAIN = attLogits([[1, 0, 1.2], [2, 1, 2.4], [5, 3, 1.6], [5, 4, 1.4], [6, 2, 1.8], [7, 1, 3.6], [8, 7, 2.2], [9, 7, 2.2], [9, 1, 2.0], [3, 2, 1.0], [4, 3, 0.4]]);
+function attSoftmax(row, ok) { const z = row.map((v, j) => ok(j) ? v : -Infinity), m = Math.max(...z), e = z.map(v => v === -Infinity ? 0 : Math.exp(v - m)), s = e.reduce((a, b) => a + b, 0); return e.map(v => v / s); }
+
+/* ---------- attention : la matrice des poids ---------- */
+VIZ.attention = el => {
+  const { body, ctrl, note } = vizShell(el, "Qui regarde qui ?", "attention");
+  const n = ATT_TOK.length; let q = 7;
+  const cb = h(`<label for="am${++vizUid}"><input type="checkbox" id="am${vizUid}" checked> Masque causal</label>`); ctrl.appendChild(cb);
+  const causal = $("input", cb);
+  ctrl.appendChild(h(`<span class="muted" style="font-size:13px">Touche un mot ou une ligne pour choisir la requête.</span>`));
+  const draw = () => {
+    const W = ATT_MAIN.map((row, i) => attSoftmax(row, j => !causal.checked || j <= i));
+    const C = 38, X0 = 78, Y0 = 72;
+    let svg = `<svg viewBox="0 0 ${X0 + n * C + 8} ${Y0 + n * C + 8}" shape-rendering="crispEdges">`;
+    ATT_TOK.forEach((t, j) => { svg += `<text x="${X0 + j * C + C / 2}" y="${Y0 - 8}" transform="rotate(-45 ${X0 + j * C + C / 2} ${Y0 - 8})" class="vz-tm" style="fill:var(--${W[q][j] > 0.15 ? "ink" : "muted"})">${t}</text>`; });
+    for (let i = 0; i < n; i++) {
+      svg += `<text x="${X0 - 8}" y="${Y0 + i * C + C / 2 + 4}" text-anchor="end" class="${i === q ? "vz-tb" : "vz-tm"}" data-q="${i}" style="cursor:pointer">${ATT_TOK[i]}</text>`;
+      for (let j = 0; j < n; j++) {
+        const masked = causal.checked && j > i, w = W[i][j];
+        svg += masked ? `<rect x="${X0 + j * C}" y="${Y0 + i * C}" width="${C}" height="${C}" class="vz-code" data-q="${i}"/>`
+          : `<rect x="${X0 + j * C}" y="${Y0 + i * C}" width="${C}" height="${C}" class="vz-accent" fill-opacity="${(0.06 + 0.94 * Math.pow(w, 0.75)).toFixed(3)}" data-q="${i}" style="cursor:pointer"/>`;
+        if (i === q && !masked) svg += `<text x="${X0 + j * C + C / 2}" y="${Y0 + i * C + C / 2 + 4}" text-anchor="middle" style="font:600 10px var(--mono);fill:var(--${w > 0.45 ? "surface" : "ink"})">${Math.round(w * 100)}</text>`;
+      }
+    }
+    svg += `<rect x="${X0}" y="${Y0 + q * C}" width="${n * C}" height="${C}" fill="none" class="vz-sink" stroke-width="2" shape-rendering="auto"/>`;
+    svg += `<text x="4" y="14" class="vz-tm">requêtes ↓ · clés →</text></svg>`;
+    const phrase = ATT_TOK.map((t, j) => { const w = W[q][j]; return `<span data-q="${j}" style="cursor:pointer;padding:2px 5px;border-radius:5px;margin:2px;display:inline-block;background:color-mix(in srgb, var(--mark) ${Math.round(Math.pow(w, 0.7) * 100)}%, transparent);${j === q ? "outline:2px solid var(--accent);" : ""}">${t}</span>`; }).join(" ");
+    body.innerHTML = svg + `<p style="font:15px var(--body);margin:12px 0 0;line-height:2">${phrase}</p>`;
+    const top = W[q].map((w, j) => [w, j]).filter(([, j]) => j !== q).sort((a, b) => b[0] - a[0])[0];
+    note.innerHTML = `La requête <b>« ${ATT_TOK[q]} »</b> donne ${Math.round(W[q][q] * 100)} % de son attention à elle-même${top && top[0] > 0 ? ` et ${Math.round(top[0] * 100)} % à <b>« ${ATT_TOK[top[1]]} »</b>` : ""}. Chaque ligne somme à 100 %. ${causal.checked ? "Avec le masque causal, les cases sombres (le futur) sont interdites : c'est le fonctionnement d'un GPT." : "Sans masque, chaque mot voit aussi les mots suivants : c'est le fonctionnement de BERT."}`;
+    $$("[data-q]", body).forEach(e => e.addEventListener("click", () => { q = +e.dataset.q; draw(); }));
+  };
+  causal.addEventListener("change", draw); draw();
+};
+
+/* ---------- attention multi-têtes ---------- */
+VIZ.heads = el => {
+  const { body, ctrl, note } = vizShell(el, "Plusieurs têtes, plusieurs relations", "multi-têtes");
+  const HEADS = [
+    { nom: "Tête 1", desc: "regarde surtout le mot précédent : elle suit l'ordre local.", L: attLogits([]).map((r, i) => r.map((v, j) => j === i - 1 ? 3.5 : j === i ? 1 : 0)) },
+    { nom: "Tête 2", desc: "relie les mots à ce dont ils parlent : « il » et « fatigué » regardent « chat », « dort » regarde son sujet.", L: attLogits([[7, 1, 4.5], [9, 1, 3.5], [8, 7, 3], [2, 1, 3.5], [5, 2, 2.5]]).map((r, i) => r.map((v, j) => j === i ? v - 1 : v)) },
+    { nom: "Tête 3", desc: "s'accroche au premier mot quand rien d'autre n'est utile : un comportement très fréquent dans les vrais modèles (« attention sink »).", L: attLogits([]).map((r, i) => r.map((v, j) => j === 0 ? 3 : j === i ? 0.8 : 0)) },
+  ];
+  let k = 1;
+  const btns = HEADS.map((hd, i) => { const b = btnCtl(ctrl, hd.nom); b.addEventListener("click", () => { k = i; draw(); }); return b; });
+  const draw = () => {
+    btns.forEach((b, i) => b.className = `btn small${i === k ? " primary" : ""}`);
+    const n = ATT_TOK.length, W = HEADS[k].L.map((row, i) => attSoftmax(row, j => j <= i));
+    const X = i => 32 + i * 60, Y = 150;
+    let svg = `<svg viewBox="0 0 620 210">`;
+    for (let i = 0; i < n; i++) for (let j = 0; j < i; j++) {
+      const w = W[i][j]; if (w < 0.12) continue;
+      const x1 = X(i), x2 = X(j), hgt = Math.min(130, 18 + Math.abs(x1 - x2) * 0.42);
+      svg += `<path d="M${x1} ${Y - 14} C${x1} ${Y - 14 - hgt}, ${x2} ${Y - 14 - hgt}, ${x2} ${Y - 14}" fill="none" class="vz-sacc" stroke-width="${(1 + w * 7).toFixed(1)}" stroke-opacity="${(0.25 + w * 0.75).toFixed(2)}" stroke-linecap="round"/>`;
+    }
+    ATT_TOK.forEach((t, i) => { svg += `<circle cx="${X(i)}" cy="${Y - 10}" r="4" class="vz-accent"/><text x="${X(i)}" y="${Y + 18}" text-anchor="middle" style="font:14px var(--body);fill:var(--ink)">${t}</text>`; });
+    body.innerHTML = svg + "</svg>";
+    note.innerHTML = `<b>${HEADS[k].nom}</b> ${HEADS[k].desc} Chaque arc part d'un mot vers un mot précédent qu'il regarde ; l'épaisseur montre le poids. Un vrai modèle a des dizaines de têtes par couche, chacune spécialisée pendant l'entraînement, sans qu'on lui dise quoi apprendre.`;
+  };
+  draw();
+};
+
+/* ---------- échantillonnage top-p ---------- */
+VIZ.topp = el => {
+  const { body, ctrl, note } = vizShell(el, "Top-p : un nombre de candidats qui s'adapte", "génération");
+  const CTX = [
+    { t: "La capitale de la France est", c: [["Paris", .82], ["une", .06], ["la", .04], ["située", .03], ["Lyon", .02], ["belle", .015], ["très", .01], ["à", .005]] },
+    { t: "Ce week-end, je vais", c: [["aller", .2], ["faire", .17], ["partir", .14], ["voir", .12], ["me", .1], ["rester", .09], ["essayer", .07], ["enfin", .06], ["courir", .05]] },
+  ];
+  let k = 0;
+  const sel = h(`<label for="tp${++vizUid}">Contexte <select id="tp${vizUid}" class="btn small"><option value="0">Le modèle est sûr</option><option value="1">Le modèle hésite</option></select></label>`); ctrl.appendChild(sel);
+  const P = rangeCtl(ctrl, `tpp${vizUid}`, "p", 0.1, 1, 0.05, 0.9, v => v.toFixed(2));
+  const draw = () => {
+    const { t, c } = CTX[k], p = +P.value; let cum = 0, n = 0;
+    for (const [, v] of c) { n++; cum += v; if (cum >= p - 1e-9) break; }
+    const kept = c.slice(0, n).reduce((a, [, v]) => a + v, 0);
+    body.innerHTML = `<p style="font:15px var(--mono);margin:0 0 12px">${esc(t)} <span class="mark">▁▁▁</span></p>` + c.map(([w, v], i) => `<div style="display:grid;grid-template-columns:80px 1fr 110px;gap:8px;align-items:center;margin:4px 0;font:13px var(--mono);opacity:${i < n ? 1 : .4}"><span>${w}</span><div class="bar" style="height:14px"><i style="width:${v * 100}%;${i < n ? "" : "background:var(--muted)"}"></i></div><span class="tab" style="text-align:right">${(v * 100).toFixed(1)} %${i < n ? ` → ${(v / kept * 100).toFixed(0)} %` : ""}</span></div>`).join("");
+    note.innerHTML = `Avec p = <b>${p.toFixed(2)}</b>, on garde <b>${n} candidat${n > 1 ? "s" : ""}</b> (probabilité cumulée ${(kept * 100).toFixed(0)} %), puis on renormalise. ${k === 0 ? "Quand le modèle est sûr, top-p garde très peu de mots : la réponse reste fiable." : "Quand le modèle hésite, top-p garde beaucoup de mots : le texte reste varié. Un top-k fixe ne s'adapterait pas."}`;
+  };
+  $("select", sel).addEventListener("change", e => { k = +e.target.value; draw(); }); P.addEventListener("input", draw); draw();
+};
+
+/* ---------- CLIP : matrice de similarités ---------- */
+VIZ.clip = el => {
+  const { body, ctrl, note } = vizShell(el, "La matrice de similarités de CLIP", "contrastif");
+  const IM = [["chat", "M8 26 L14 8 L20 20 L28 20 L34 8 L40 26 Z"], ["voiture", "M4 30 L10 18 L36 18 L44 30 Z"], ["plage", "M2 34 Q24 24 46 34 Z"], ["pizza", "M24 6 L44 38 L4 38 Z"]];
+  const TX = ["un chat qui dort", "une voiture rouge", "une plage au soleil", "une pizza maison"];
+  const r = mulberry(12), S0 = IM.map(() => TX.map(() => (r() - 0.5) * 0.5));
+  let prog = 0, timer = null;
+  const T = rangeCtl(ctrl, `ct${++vizUid}`, "Température τ", 0.02, 1, 0.01, 0.1, v => v.toFixed(2));
+  const go = btnCtl(ctrl, "Entraîner", "btn small primary"), rst = btnCtl(ctrl, "Réinitialiser");
+  const sim = () => S0.map((row, i) => row.map((v, j) => (1 - prog) * v + prog * (i === j ? 0.82 : -0.05 + 0.1 * ((i + j) % 3) / 2)));
+  const draw = () => {
+    const S = sim(), tau = +T.value;
+    const P = S.map(row => { const z = row.map(v => v / tau), m = Math.max(...z), e = z.map(v => Math.exp(v - m)), s = e.reduce((a, b) => a + b, 0); return e.map(v => v / s); });
+    const loss = -P.reduce((a, row, i) => a + Math.log(row[i]), 0) / 4;
+    const C = 92, X0 = 100, Y0 = 70;
+    let svg = `<svg viewBox="0 0 ${X0 + 4 * C + 10} ${Y0 + 4 * C + 10}">`;
+    TX.forEach((t, j) => { const words = t.split(" "); svg += `<text x="${X0 + j * C + C / 2}" y="${Y0 - 34}" text-anchor="middle" class="vz-tm">${words.slice(0, 2).join(" ")}</text><text x="${X0 + j * C + C / 2}" y="${Y0 - 20}" text-anchor="middle" class="vz-tm">${words.slice(2).join(" ")}</text>`; });
+    IM.forEach(([nom, d], i) => { svg += `<g transform="translate(${18} ${Y0 + i * C + 18}) scale(1.1)"><rect x="0" y="0" width="48" height="44" rx="6" class="vz-code" stroke="var(--line)"/><path d="${d}" class="vz-mark"/></g><text x="${44}" y="${Y0 + i * C + 82}" text-anchor="middle" class="vz-tm">${nom}</text>`; });
+    for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) {
+      const p = P[i][j];
+      svg += `<rect x="${X0 + j * C + 2}" y="${Y0 + i * C + 2}" width="${C - 4}" height="${C - 4}" rx="8" class="${i === j ? "vz-ok" : "vz-accent"}" fill-opacity="${(0.08 + 0.92 * p).toFixed(3)}"${i === j ? ` stroke="var(--ok)" stroke-width="2"` : ""}/>`;
+      svg += `<text x="${X0 + j * C + C / 2}" y="${Y0 + i * C + C / 2 - 2}" text-anchor="middle" style="font:600 14px var(--mono);fill:var(--${p > 0.55 ? "surface" : "ink"})">${S[i][j].toFixed(2)}</text><text x="${X0 + j * C + C / 2}" y="${Y0 + i * C + C / 2 + 16}" text-anchor="middle" style="font:11px var(--mono);fill:var(--${p > 0.55 ? "surface" : "muted"})">${Math.round(p * 100)} %</text>`;
+    }
+    body.innerHTML = svg + "</svg>";
+    const ok = P.filter((row, i) => row.indexOf(Math.max(...row)) === i).length;
+    note.innerHTML = `Chaque case montre la similarité cosinus et, dessous, la probabilité après softmax de la ligne (divisée par τ). Perte : <b>${loss.toFixed(3)}</b> · bonnes paires retrouvées : <b>${ok}/4</b>. ${prog < 0.05 ? "Avant l'entraînement, les similarités sont aléatoires." : prog >= 1 ? "La diagonale (les bonnes paires) domine : l'image et sa légende sont proches dans l'espace commun." : "L'entraînement rapproche chaque image de sa légende et l'éloigne des autres."} Baisse τ : le softmax tranche davantage.`;
+  };
+  go.addEventListener("click", () => { if (timer) return; timer = setInterval(() => { if (!el.isConnected) { clearInterval(timer); timer = null; return; } prog = Math.min(1, prog + 0.04); draw(); if (prog >= 1) { clearInterval(timer); timer = null; } }, 50); });
+  rst.addEventListener("click", () => { if (timer) { clearInterval(timer); timer = null; } prog = 0; draw(); });
+  T.addEventListener("input", draw); draw();
+};
+
+/* ---------- diffusion en 2D ---------- */
+VIZ.diffusion = el => {
+  const { body, ctrl, note } = vizShell(el, "Bruiter, puis débruiter", "diffusion");
+  const r = mulberry(21), N = 260, Tn = 100;
+  const data = Array.from({ length: N }, () => { const a = 0.5 + r() * 3.5 * Math.PI; return [a * Math.cos(a) / 6, a * Math.sin(a) / 6]; });
+  const eps = data.map(() => [gauss(r), gauss(r)]);
+  const betas = Array.from({ length: Tn }, (_, i) => 1e-3 + (0.1 - 1e-3) * i / (Tn - 1)), abar = []; betas.reduce((a, b, i) => (abar[i] = a * (1 - b)), 1);
+  const T = rangeCtl(ctrl, `dt${++vizUid}`, "Instant t", 0, Tn, 1, 0);
+  const gen = btnCtl(ctrl, "Générer depuis le bruit", "btn small primary");
+  let pts = null, mode = "avant", timer = null, tcur = 0;
+  const forward = t => t === 0 ? data : data.map((x, i) => [Math.sqrt(abar[t - 1]) * x[0] + Math.sqrt(1 - abar[t - 1]) * eps[i][0], Math.sqrt(abar[t - 1]) * x[1] + Math.sqrt(1 - abar[t - 1]) * eps[i][1]]);
+  const epsOpt = (x, t) => { const sa = Math.sqrt(abar[t]), v = 2 * (1 - abar[t]); let wmax = -Infinity; const lw = data.map(d => { const a = -((x[0] - sa * d[0]) ** 2 + (x[1] - sa * d[1]) ** 2) / v; if (a > wmax) wmax = a; return a; }); let s = 0, m0 = 0, m1 = 0; lw.forEach((a, i) => { const w = Math.exp(a - wmax); s += w; m0 += w * data[i][0]; m1 += w * data[i][1]; }); return [(x[0] - sa * m0 / s) / Math.sqrt(1 - abar[t]), (x[1] - sa * m1 / s) / Math.sqrt(1 - abar[t])]; };
+  const draw = () => {
+    const P = mode === "avant" ? forward(+T.value) : pts, X = v => 300 + v * 110, Y = v => 150 - v * 66;
+    let svg = `<svg viewBox="0 0 600 300"><rect x="0" y="0" width="600" height="300" rx="10" class="vz-code"/>`;
+    data.forEach(([a, b]) => { svg += `<circle cx="${X(a)}" cy="${Y(b)}" r="2" class="vz-muted" fill-opacity=".25"/>`; });
+    P.forEach(([a, b]) => { if (Math.abs(a) < 2.7 && Math.abs(b) < 2.2) svg += `<circle cx="${X(a)}" cy="${Y(b)}" r="2.6" class="${mode === "avant" ? "vz-accent" : "vz-ok"}"/>`; });
+    body.innerHTML = svg + "</svg>";
+    const t = mode === "avant" ? +T.value : tcur, ab = t === 0 ? 1 : abar[t - 1];
+    note.innerHTML = mode === "avant"
+      ? `Processus vers l'avant à t = <b>${t}</b> : ᾱ = <b>${ab.toFixed(3)}</b>, il reste ${Math.round(Math.sqrt(ab) * 100)} % du signal. En gris, les données d'origine (une spirale). Pousse t à 100 : il ne reste que du bruit.`
+      : `Processus inverse, étape t = <b>${t}</b>. On part de 260 points de bruit pur ; à chaque étape, on retire le bruit prédit et on rajoute un peu de hasard. Les points se rassemblent sur la spirale.`;
+  };
+  T.addEventListener("input", () => { if (timer) { clearInterval(timer); timer = null; } mode = "avant"; draw(); });
+  gen.addEventListener("click", () => {
+    if (timer) clearInterval(timer);
+    const rr = mulberry(Date.now() % 100000); pts = data.map(() => [gauss(rr), gauss(rr)]); tcur = Tn; mode = "arriere";
+    timer = setInterval(() => {
+      if (!el.isConnected) { clearInterval(timer); timer = null; return; }
+      for (let k = 0; k < 2 && tcur > 0; k++) {
+        const t = tcur - 1;
+        pts = pts.map(x => { const e = epsOpt(x, t), c = betas[t] / Math.sqrt(1 - abar[t]), s = Math.sqrt(1 - betas[t]); const m = [(x[0] - c * e[0]) / s, (x[1] - c * e[1]) / s]; return t > 0 ? [m[0] + Math.sqrt(betas[t]) * gauss(rr), m[1] + Math.sqrt(betas[t]) * gauss(rr)] : m; });
+        tcur = t;
+      }
+      draw(); if (tcur <= 0) { clearInterval(timer); timer = null; }
+    }, 40);
+  });
+  draw();
+};
+
+/* ---------- LoRA ---------- */
+VIZ.lora = el => {
+  const { body, ctrl, note } = vizShell(el, "LoRA : une petite correction de rang r", "fine-tuning");
+  const D = [256, 512, 1024, 2048, 4096, 8192];
+  const Di = rangeCtl(ctrl, `ld${++vizUid}`, "Dimension d", 0, 5, 1, 4, v => D[v]);
+  const R = rangeCtl(ctrl, `lr${vizUid}`, "Rang r", 1, 64, 1, 8);
+  const draw = () => {
+    const d = D[+Di.value], r = +R.value, full = d * d, lo = 2 * d * r, S = 170, a = Math.max(5, S * r / d);
+    const x1 = 300, top = 34, xb = x1 + a + 12;
+    let svg = `<svg viewBox="0 0 600 290">`;
+    svg += `<rect x="20" y="${top}" width="${S}" height="${S}" rx="6" class="vz-muted" fill-opacity=".25" stroke="var(--muted)"/><text x="${20 + S / 2}" y="${top + S / 2}" text-anchor="middle" class="vz-tb">W</text><text x="${20 + S / 2}" y="${top + S / 2 + 18}" text-anchor="middle" class="vz-tm">gelée · ${d} × ${d}</text>`;
+    svg += `<text x="245" y="${top + S / 2 + 8}" text-anchor="middle" style="font:600 26px var(--body);fill:var(--ink)">+</text>`;
+    svg += `<rect x="${x1}" y="${top}" width="${a}" height="${S}" rx="3" class="vz-accent"/><text x="${x1 - 8}" y="${top + S / 2 + 4}" text-anchor="end" class="vz-tb">A</text>`;
+    svg += `<rect x="${xb}" y="${top}" width="${S}" height="${a}" rx="3" class="vz-accent"/><text x="${xb + S + 8}" y="${top + a / 2 + 5}" class="vz-tb">B</text>`;
+    svg += `<text x="${xb + S / 2}" y="${top + S / 2 + 10}" text-anchor="middle" class="vz-tm">A : ${d} × ${r}</text><text x="${xb + S / 2}" y="${top + S / 2 + 28}" text-anchor="middle" class="vz-tm">B : ${r} × ${d}</text>`;
+    svg += `<text x="${x1}" y="${top - 12}" class="vz-tm">entraînées, en bleu</text>`;
+    const bw = 560;
+    svg += `<text x="20" y="246" class="vz-tm">part des paramètres à entraîner</text><rect x="20" y="256" width="${bw}" height="12" rx="6" class="vz-muted" fill-opacity=".3"/><rect x="20" y="256" width="${Math.max(3, bw * lo / full)}" height="12" rx="6" class="vz-accent"/></svg>`;
+    body.innerHTML = svg;
+    note.innerHTML = `Matrice complète : <b>${full.toLocaleString("fr-FR")}</b> paramètres. Adaptateur LoRA : <b>${lo.toLocaleString("fr-FR")}</b>, soit <b>${(lo / full * 100).toLocaleString("fr-FR", { maximumFractionDigits: 2 })} %</b> à entraîner. ${a <= 5 ? "A et B sont dessinées plus épaisses qu'en réalité, sinon on ne les verrait pas. " : ""}Plus r est grand, plus la correction peut être riche, mais la plupart des usages se contentent de r = 8 à 64.`;
+  };
+  Di.addEventListener("input", draw); R.addEventListener("input", draw); draw();
+};
+
+/* ---------- Q-learning sur une grille ---------- */
+VIZ.qlearn = el => {
+  const { body, ctrl, note } = vizShell(el, "Un agent apprend à traverser une grille", "Q-learning");
+  const G = 5, GOAL = [4, 4], TRAPS = ["2,1", "1,3", "3,3"], WALLS = ["2,2", "3,1"];
+  const MV = [[0, -1], [1, 0], [0, 1], [-1, 0]], ARR = ["↑", "→", "↓", "←"];
+  const E = rangeCtl(ctrl, `qe${++vizUid}`, "Exploration ε", 0, 0.5, 0.05, 0.2, v => v.toFixed(2));
+  const go = btnCtl(ctrl, "Entraîner 25 épisodes", "btn small primary"), rst = btnCtl(ctrl, "Réinitialiser");
+  let Q, ep, rr;
+  const init = () => { Q = Array.from({ length: G * G }, () => [0, 0, 0, 0]); ep = 0; rr = mulberry(5); };
+  const step = (x, y, a) => { let nx = Math.min(G - 1, Math.max(0, x + MV[a][0])), ny = Math.min(G - 1, Math.max(0, y + MV[a][1])); if (WALLS.includes(`${nx},${ny}`)) { nx = x; ny = y; } const k = `${nx},${ny}`; if (nx === GOAL[0] && ny === GOAL[1]) return [nx, ny, 1, true]; if (TRAPS.includes(k)) return [nx, ny, -1, true]; return [nx, ny, -0.02, false]; };
+  const episode = () => {
+    let x = 0, y = 0;
+    for (let s = 0; s < 60; s++) {
+      const q = Q[y * G + x], best = Math.max(...q), a = rr() < +E.value || q.every(v => v === q[0]) ? Math.floor(rr() * 4) : q.indexOf(best);
+      const [nx, ny, rw, done] = step(x, y, a), tgt = done ? rw : rw + 0.9 * Math.max(...Q[ny * G + nx]);
+      Q[y * G + x][a] += 0.5 * (tgt - Q[y * G + x][a]); x = nx; y = ny; if (done) break;
+    }
+    ep++;
+  };
+  const greedy = () => { let x = 0, y = 0; const p = [[0, 0]]; for (let s = 0; s < 20; s++) { const q = Q[y * G + x]; if (q.every(v => v === 0)) break; const [nx, ny, , done] = step(x, y, q.indexOf(Math.max(...q))); x = nx; y = ny; p.push([x, y]); if (done) break; } return p; };
+  const draw = () => {
+    const C = 52, X0 = 170, Y0 = 8;
+    let svg = `<svg viewBox="0 0 600 ${G * C + 16}">`;
+    for (let y = 0; y < G; y++) for (let x = 0; x < G; x++) {
+      const k = `${x},${y}`, v = Math.max(...Q[y * G + x]), px = X0 + x * C, py = Y0 + y * C, goal = x === GOAL[0] && y === GOAL[1];
+      const cls = WALLS.includes(k) ? "vz-muted" : TRAPS.includes(k) ? "vz-err" : goal || v >= 0 ? "vz-ok" : "vz-err";
+      const op = WALLS.includes(k) ? 0.5 : TRAPS.includes(k) || goal ? 0.9 : Math.min(0.75, Math.abs(v) * 0.9);
+      svg += `<rect x="${px + 1}" y="${py + 1}" width="${C - 2}" height="${C - 2}" rx="6" class="${cls}" fill-opacity="${op.toFixed(2)}" stroke="var(--line)"/>`;
+      if (TRAPS.includes(k) || goal) svg += `<text x="${px + C / 2}" y="${py + C / 2 + 5}" text-anchor="middle" style="font:600 13px var(--mono);fill:var(--surface)">${goal ? "+1" : "−1"}</text>`;
+      else if (!WALLS.includes(k) && Q[y * G + x].some(q => q !== 0)) svg += `<text x="${px + C / 2}" y="${py + C / 2 + 7}" text-anchor="middle" style="font:600 20px var(--body);fill:var(--ink)">${ARR[Q[y * G + x].indexOf(Math.max(...Q[y * G + x]))]}</text>`;
+    }
+    const g = greedy();
+    svg += `<polyline points="${g.map(([x, y]) => `${X0 + x * C + C / 2},${Y0 + y * C + C / 2}`).join(" ")}" fill="none" class="vz-sacc" stroke-width="3" stroke-dasharray="6 4" stroke-linecap="round"/>`;
+    svg += `<circle cx="${X0 + C / 2}" cy="${Y0 + C / 2}" r="8" class="vz-mark" stroke="var(--ink)"/></svg>`;
+    body.innerHTML = svg;
+    const fin = g[g.length - 1], reussi = fin[0] === GOAL[0] && fin[1] === GOAL[1];
+    note.innerHTML = `Épisodes : <b>${ep}</b>. Le point jaune est le départ, la case verte « +1 » l'arrivée, les cases rouges « −1 » des pièges, les grises des murs. Chaque pas coûte −0,02. Les flèches montrent l'action de plus grande valeur Q dans chaque case, le pointillé le chemin glouton. ${ep === 0 ? "Lance l'entraînement." : reussi ? `L'agent a trouvé un chemin en <b>${g.length - 1} pas</b> sans tomber dans un piège.` : "L'agent n'a pas encore trouvé de chemin fiable : continue l'entraînement."}`;
+  };
+  go.addEventListener("click", () => { let n = 0; const t = setInterval(() => { if (!el.isConnected || n >= 25) { clearInterval(t); return; } episode(); n++; draw(); }, 35); });
+  rst.addEventListener("click", () => { init(); draw(); });
+  init(); draw();
+};
+
 "use strict";
 /* ================================================================ utilitaires */
 const $ = (s, r = document) => r.querySelector(s);

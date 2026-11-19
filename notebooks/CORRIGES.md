@@ -780,9 +780,9 @@ taux_humain = sum(r["route"] == "humain" for _, r in resultats) / len(resultats)
 print(taux_sources, taux_humain)
 ```
 
-## FullStack IA · Préparer ta formation
+## FullStack AI · Préparer ta formation
 
-## FullStack IA · Fondation d'ingénierie en IA
+## FullStack AI · Fondation d'ingénierie en IA
 
 ### Classes et objets · Un modèle médiane
 
@@ -957,7 +957,7 @@ m = PlusProcheMoyenne().fit(X, y)
 print(m.centres_, m.predict([[2, 2], [7, 9]]))
 ```
 
-## FullStack IA · Analyse exploratoire des données
+## FullStack AI · Analyse exploratoire des données
 
 ### NumPy : calculer sur des tableaux · Normalisation min-max vectorisée
 
@@ -1191,7 +1191,7 @@ taux_enfants = df[df["age"] < 12]["survived"].mean()
 print(f"Taux de survie des moins de 12 ans : {taux_enfants:.1%}")
 ```
 
-## FullStack IA · Infrastructure de données
+## FullStack AI · Infrastructure de données
 
 ### SQL : interroger une base de données · Les thés abordables
 
@@ -1367,7 +1367,7 @@ top_categorie = faits.groupby("categorie")["montant"].sum().idxmax()
 print(ca_mensuel, croissance, top_categorie)
 ```
 
-## FullStack IA · Apprentissage automatique
+## FullStack AI · Apprentissage automatique
 
 ### Le vocabulaire du machine learning · Préparer X et y
 
@@ -1893,7 +1893,7 @@ erreur_mediane_pct = (np.abs(y_test - pred) / y_test * 100).median()
 print(f"MAE : {mae_test:,.0f} €  ·  erreur médiane : {erreur_mediane_pct:.1f} %")
 ```
 
-## FullStack IA · Fondation pour l'apprentissage profond
+## FullStack AI · Fondation pour l'apprentissage profond
 
 ### Le neurone, les couches et les fonctions d'activation · Les activations et leurs dérivées
 
@@ -2381,4 +2381,721 @@ Xs = (X - moy) / ecart
 modele = MLP(4, 16, 3, eta=0.1, epoques=300).fit(Xs[train], y[train])
 acc_test = (modele.predict(Xs[test]) == y[test]).mean()
 print(f"Exactitude sur le test : {acc_test:.3f}")
+```
+
+## FullStack AI · Architectures de modèles génératifs
+
+### L'attention, pas à pas · Un softmax qui ne déborde pas
+
+```python
+import numpy as np
+
+def softmax(x, axis=-1):
+    x = x - x.max(axis=axis, keepdims=True)
+    e = np.exp(x)
+    return e / e.sum(axis=axis, keepdims=True)
+
+print(softmax(np.array([1.0, 2.0, 3.0])))
+print(softmax(np.array([[1000.0, 1001.0], [0.0, 0.0]])))
+```
+
+### L'attention, pas à pas · L'attention par produit scalaire
+
+```python
+import numpy as np
+
+def softmax(x, axis=-1):
+    x = x - x.max(axis=axis, keepdims=True)
+    e = np.exp(x)
+    return e / e.sum(axis=axis, keepdims=True)
+
+def attention(Q, K, V, masque=None):
+    S = Q @ K.T / np.sqrt(K.shape[-1])
+    if masque is not None:
+        S = np.where(masque, S, -1e9)
+    P = softmax(S)
+    return P @ V, P
+
+rng = np.random.default_rng(0)
+Q, K, V = rng.normal(size=(3, 4)), rng.normal(size=(5, 4)), rng.normal(size=(5, 2))
+sortie, poids = attention(Q, K, V)
+print(poids.round(2), sortie.shape)
+```
+
+### L'attention, pas à pas · L'auto-attention causale
+
+```python
+import numpy as np
+
+def softmax(x, axis=-1):
+    x = x - x.max(axis=axis, keepdims=True)
+    e = np.exp(x)
+    return e / e.sum(axis=axis, keepdims=True)
+
+def attention(Q, K, V, masque=None):
+    S = Q @ K.T / np.sqrt(K.shape[-1])
+    if masque is not None:
+        S = np.where(masque, S, -1e9)
+    P = softmax(S)
+    return P @ V, P
+
+def masque_causal(n):
+    return np.tril(np.ones((n, n), dtype=bool))
+
+def auto_attention_causale(X, Wq, Wk, Wv):
+    Q, K, V = X @ Wq, X @ Wk, X @ Wv
+    return attention(Q, K, V, masque_causal(len(X)))[0]
+
+rng = np.random.default_rng(0)
+X = rng.normal(size=(4, 6))
+Wq, Wk, Wv = (rng.normal(size=(6, 3)) for _ in range(3))
+print(masque_causal(4).astype(int))
+print(auto_attention_causale(X, Wq, Wk, Wv).round(2))
+```
+
+### Le Transformer, bloc par bloc · Compter les paramètres d'un GPT
+
+```python
+def n_parametres(vocab, d, n_couches, n_ctx):
+    embeddings = vocab * d + n_ctx * d
+    ln = 2 * d
+    attention = d * 3 * d + 3 * d + d * d + d
+    ffn = d * 4 * d + 4 * d + 4 * d * d + d
+    par_couche = 2 * ln + attention + ffn
+    return embeddings + n_couches * par_couche + ln
+
+print(f"GPT-2 small : {n_parametres(50257, 768, 12, 1024):,}".replace(",", " "))
+```
+
+### Le Transformer, bloc par bloc · La normalisation de couche
+
+```python
+import numpy as np
+
+def layer_norm(x, gamma, beta, eps=1e-5):
+    m = x.mean(axis=-1, keepdims=True)
+    v = x.var(axis=-1, keepdims=True)
+    return gamma * (x - m) / np.sqrt(v + eps) + beta
+
+x = np.array([[1.0, 2.0, 3.0, 4.0], [10.0, 0.0, 10.0, 0.0]])
+print(layer_norm(x, np.ones(4), np.zeros(4)).round(3))
+```
+
+### Le Transformer, bloc par bloc · L'attention multi-têtes
+
+```python
+import numpy as np
+
+def softmax(x, axis=-1):
+    x = x - x.max(axis=axis, keepdims=True)
+    e = np.exp(x)
+    return e / e.sum(axis=axis, keepdims=True)
+
+def multi_tetes(X, Wq, Wk, Wv, Wo, h):
+    n, d = X.shape
+    dk = d // h
+    sep = lambda M: M.reshape(n, h, dk).transpose(1, 0, 2)
+    Q, K, V = sep(X @ Wq), sep(X @ Wk), sep(X @ Wv)
+    A = softmax(Q @ K.transpose(0, 2, 1) / np.sqrt(dk))
+    Z = (A @ V).transpose(1, 0, 2).reshape(n, d)
+    return Z @ Wo
+
+rng = np.random.default_rng(0)
+X = rng.normal(size=(4, 8))
+Wq, Wk, Wv, Wo = (rng.normal(size=(8, 8)) for _ in range(4))
+print(multi_tetes(X, Wq, Wk, Wv, Wo, 2).shape)
+```
+
+### Le Transformer, bloc par bloc · L'échantillonnage top-p
+
+```python
+import numpy as np
+
+def top_p(probas, p):
+    ordre = np.argsort(probas)[::-1]
+    cumul = np.cumsum(probas[ordre])
+    n_gardes = int(np.searchsorted(cumul, p)) + 1
+    garde = np.zeros_like(probas)
+    garde[ordre[:n_gardes]] = probas[ordre[:n_gardes]]
+    return garde / garde.sum()
+
+print(top_p(np.array([0.1, 0.5, 0.05, 0.2, 0.15]), 0.8))
+```
+
+### Tokenisation : du texte aux identifiants · Entraîner un BPE
+
+```python
+from collections import Counter
+
+def entrainer_bpe(corpus, n_fusions):
+    mots = {tuple(m): f for m, f in corpus.items()}
+    fusions = []
+    for _ in range(n_fusions):
+        paires = Counter()
+        for symboles, f in mots.items():
+            for a, b in zip(symboles, symboles[1:]):
+                paires[(a, b)] += f
+        if not paires:
+            break
+        (a, b), _ = paires.most_common(1)[0]
+        fusions.append((a, b))
+        nouveaux = {}
+        for symboles, f in mots.items():
+            res, i = [], 0
+            while i < len(symboles):
+                if i < len(symboles) - 1 and symboles[i] == a and symboles[i + 1] == b:
+                    res.append(a + b); i += 2
+                else:
+                    res.append(symboles[i]); i += 1
+            nouveaux[tuple(res)] = f
+        mots = nouveaux
+    return fusions
+
+corpus = {"low": 5, "lower": 2, "newest": 6, "widest": 3}
+print(entrainer_bpe(corpus, 6))
+```
+
+### Tokenisation : du texte aux identifiants · Tokeniser un nouveau mot
+
+```python
+def tokeniser(mot, fusions):
+    symboles = list(mot)
+    for a, b in fusions:
+        res, i = [], 0
+        while i < len(symboles):
+            if i < len(symboles) - 1 and symboles[i] == a and symboles[i + 1] == b:
+                res.append(a + b); i += 2
+            else:
+                res.append(symboles[i]); i += 1
+        symboles = res
+    return symboles
+
+fusions = [("e", "s"), ("es", "t"), ("l", "o"), ("lo", "w"), ("n", "e"), ("ne", "w")]
+for m in ["lowest", "newer", "slow", "zest"]:
+    print(m, "→", tokeniser(m, fusions))
+```
+
+### Tokenisation : du texte aux identifiants · Compléter et masquer un lot
+
+```python
+import numpy as np
+
+def preparer_lot(sequences, pad_id=0, max_len=None):
+    if max_len is not None:
+        sequences = [s[:max_len] for s in sequences]
+    L = max(len(s) for s in sequences)
+    ids = np.full((len(sequences), L), pad_id, dtype=int)
+    masque = np.zeros((len(sequences), L), dtype=int)
+    for i, s in enumerate(sequences):
+        ids[i, :len(s)] = s
+        masque[i, :len(s)] = 1
+    return ids, masque
+
+ids, masque = preparer_lot([[5, 8, 2], [7], [3, 3, 3, 3, 3]], max_len=4)
+print(ids); print(masque)
+```
+
+### Transformers appliqués avec Hugging Face · Le mean pooling
+
+```python
+import numpy as np
+
+def mean_pooling(etats, masque):
+    m = masque[:, :, None].astype(float)
+    return (etats * m).sum(axis=1) / np.clip(m.sum(axis=1), 1e-9, None)
+
+etats = np.arange(24, dtype=float).reshape(2, 4, 3)
+masque = np.array([[1, 1, 0, 0], [1, 1, 1, 1]])
+print(mean_pooling(etats, masque))
+```
+
+### Transformers appliqués avec Hugging Face · Des logits aux étiquettes
+
+```python
+import numpy as np
+
+def predire(logits, id2label):
+    z = logits - logits.max(axis=1, keepdims=True)
+    p = np.exp(z) / np.exp(z).sum(axis=1, keepdims=True)
+    return [{"label": id2label[int(i)], "score": round(float(p[r, i]), 4)} for r, i in enumerate(p.argmax(axis=1))]
+
+id2label = {0: "négatif", 1: "neutre", 2: "positif"}
+print(predire(np.array([[2.0, 0.1, -1.0], [-1.0, 0.0, 3.0]]), id2label))
+```
+
+### CLIP et l'apprentissage contrastif · La matrice de similarités
+
+```python
+import numpy as np
+
+def similarites(images, textes):
+    I = images / np.linalg.norm(images, axis=1, keepdims=True)
+    T = textes / np.linalg.norm(textes, axis=1, keepdims=True)
+    return I @ T.T
+
+print(similarites(np.array([[1.0, 0.0], [1.0, 1.0]]), np.array([[2.0, 0.0], [0.0, 3.0], [-1.0, -1.0]])).round(3))
+```
+
+### CLIP et l'apprentissage contrastif · La perte contrastive de CLIP
+
+```python
+import numpy as np
+
+def similarites(images, textes):
+    I = images / np.linalg.norm(images, axis=1, keepdims=True)
+    T = textes / np.linalg.norm(textes, axis=1, keepdims=True)
+    return I @ T.T
+
+def entropie_diag(Z):
+    Z = Z - Z.max(axis=1, keepdims=True)
+    log_p = Z - np.log(np.exp(Z).sum(axis=1, keepdims=True))
+    return -np.mean(np.diag(log_p))
+
+def perte_clip(images, textes, temperature=0.07):
+    Z = similarites(images, textes) / temperature
+    return (entropie_diag(Z) + entropie_diag(Z.T)) / 2
+
+rng = np.random.default_rng(0)
+c = rng.normal(size=(8, 16))
+print("paires alignées :", round(perte_clip(c + 0.1 * rng.normal(size=c.shape), c), 3))
+print("paires mélangées :", round(perte_clip(rng.normal(size=c.shape), c), 3))
+```
+
+### CLIP et l'apprentissage contrastif · Classer sans entraînement
+
+```python
+import numpy as np
+
+def similarites(images, textes):
+    I = images / np.linalg.norm(images, axis=1, keepdims=True)
+    T = textes / np.linalg.norm(textes, axis=1, keepdims=True)
+    return I @ T.T
+
+def zero_shot(images, textes_classes, classes):
+    return [classes[i] for i in similarites(images, textes_classes).argmax(axis=1)]
+
+rng = np.random.default_rng(1)
+t = rng.normal(size=(3, 8))
+print(zero_shot(t[[2, 0, 1]] + 0.2 * rng.normal(size=(3, 8)), t, ["chat", "chien", "voiture"]))
+```
+
+### La diffusion : générer en débruitant · Le programme de bruit
+
+```python
+import numpy as np
+
+def programme_bruit(T, beta_min=1e-4, beta_max=0.02):
+    betas = np.linspace(beta_min, beta_max, T)
+    alphas = 1 - betas
+    return betas, alphas, np.cumprod(alphas)
+
+b, a, ab = programme_bruit(1000)
+print(f"ᾱ au début : {ab[0]:.4f} · au milieu : {ab[499]:.4f} · à la fin : {ab[-1]:.6f}")
+```
+
+### La diffusion : générer en débruitant · Bruiter en une étape
+
+```python
+import numpy as np
+betas = np.linspace(1e-4, 0.02, 1000)
+alpha_barre = np.cumprod(1 - betas)
+
+def bruiter(x0, t, alpha_barre, eps):
+    return np.sqrt(alpha_barre[t]) * x0 + np.sqrt(1 - alpha_barre[t]) * eps
+
+snr = [alpha_barre[t] / (1 - alpha_barre[t]) for t in (0, 250, 500, 999)]
+print([f"{s:.3g}" for s in snr])
+```
+
+### La diffusion : générer en débruitant · Une étape de débruitage
+
+```python
+import numpy as np
+betas = np.linspace(1e-4, 0.02, 1000)
+alpha_barre = np.cumprod(1 - betas)
+
+def etape_inverse(xt, t, eps_pred, betas, alpha_barre, z):
+    alpha = 1 - betas[t]
+    moyenne = (xt - betas[t] / np.sqrt(1 - alpha_barre[t]) * eps_pred) / np.sqrt(alpha)
+    return moyenne if t == 0 else moyenne + np.sqrt(betas[t]) * z
+
+rng = np.random.default_rng(0)
+x = rng.normal(size=3)
+print(etape_inverse(x, 500, rng.normal(size=3), betas, alpha_barre, rng.normal(size=3)))
+```
+
+### La diffusion : générer en débruitant · Le guidage sans classifieur
+
+```python
+import numpy as np
+
+def guidage(eps_cond, eps_sans, w):
+    return eps_sans + w * (eps_cond - eps_sans)
+
+w_typique = 7.5
+a, b = np.array([1.0, 2.0]), np.array([0.0, 1.0])
+print(guidage(a, b, 1), guidage(a, b, 0), guidage(a, b, w_typique))
+```
+
+### Projet · Ton mini-GPT, de l'embedding au cache KV · La classe MiniGPT
+
+```python
+import numpy as np
+
+def softmax(x, axis=-1):
+    x = x - x.max(axis=axis, keepdims=True)
+    e = np.exp(x)
+    return e / e.sum(axis=axis, keepdims=True)
+
+def layer_norm(x, g, b, eps=1e-5):
+    m = x.mean(axis=-1, keepdims=True)
+    v = x.var(axis=-1, keepdims=True)
+    return g * (x - m) / np.sqrt(v + eps) + b
+
+def gelu(x):
+    return 0.5 * x * (1 + np.tanh(np.sqrt(2 / np.pi) * (x + 0.044715 * x ** 3)))
+
+class MiniGPT:
+    def __init__(self, vocab, d=32, h=4, n_couches=2, n_ctx=64, graine=0):
+        rng = np.random.default_rng(graine)
+        N = lambda *forme: rng.normal(0, 0.3, forme)
+        self.h, self.n_ctx = h, n_ctx
+        self.wte, self.wpe = N(vocab, d), N(n_ctx, d)
+        self.blocs = [dict(g1=np.ones(d), b1=np.zeros(d), Wqkv=N(d, 3 * d), Wo=N(d, d),
+                           g2=np.ones(d), b2=np.zeros(d), W1=N(d, 4 * d), c1=np.zeros(4 * d),
+                           W2=N(4 * d, d), c2=np.zeros(d)) for _ in range(n_couches)]
+        self.gf, self.bf = np.ones(d), np.zeros(d)
+
+    def _attention(self, x, B):
+        n, d = x.shape
+        h, dk = self.h, d // self.h
+        q, k, v = np.split(x @ B["Wqkv"], 3, axis=-1)
+        q, k, v = (m.reshape(n, h, dk).transpose(1, 0, 2) for m in (q, k, v))
+        s = q @ k.transpose(0, 2, 1) / np.sqrt(dk)
+        s = np.where(np.tril(np.ones((n, n), dtype=bool)), s, -1e9)
+        z = (softmax(s) @ v).transpose(1, 0, 2).reshape(n, d)
+        return z @ B["Wo"]
+
+    def forward(self, ids):
+        ids = np.asarray(ids)
+        x = self.wte[ids] + self.wpe[np.arange(len(ids))]
+        for B in self.blocs:
+            x = x + self._attention(layer_norm(x, B["g1"], B["b1"]), B)
+            x = x + gelu(layer_norm(x, B["g2"], B["b2"]) @ B["W1"] + B["c1"]) @ B["W2"] + B["c2"]
+        return layer_norm(x, self.gf, self.bf) @ self.wte.T
+
+m = MiniGPT(vocab=20, d=16, h=4, n_couches=2, n_ctx=12)
+logits = m.forward([1, 5, 3, 7])
+print(logits.shape)
+print("prochain token le plus probable :", logits[-1].argmax())
+```
+
+### Projet · Ton mini-GPT, de l'embedding au cache KV · Générer, token par token
+
+```python
+import numpy as np
+
+def softmax(x, axis=-1):
+    x = x - x.max(axis=axis, keepdims=True)
+    e = np.exp(x)
+    return e / e.sum(axis=axis, keepdims=True)
+
+def layer_norm(x, g, b, eps=1e-5):
+    m = x.mean(axis=-1, keepdims=True)
+    v = x.var(axis=-1, keepdims=True)
+    return g * (x - m) / np.sqrt(v + eps) + b
+
+def gelu(x):
+    return 0.5 * x * (1 + np.tanh(np.sqrt(2 / np.pi) * (x + 0.044715 * x ** 3)))
+
+class MiniGPT:
+    def __init__(self, vocab, d=32, h=4, n_couches=2, n_ctx=64, graine=0):
+        rng = np.random.default_rng(graine)
+        N = lambda *forme: rng.normal(0, 0.3, forme)
+        self.h, self.n_ctx = h, n_ctx
+        self.wte, self.wpe = N(vocab, d), N(n_ctx, d)
+        self.blocs = [dict(g1=np.ones(d), b1=np.zeros(d), Wqkv=N(d, 3 * d), Wo=N(d, d),
+                           g2=np.ones(d), b2=np.zeros(d), W1=N(d, 4 * d), c1=np.zeros(4 * d),
+                           W2=N(4 * d, d), c2=np.zeros(d)) for _ in range(n_couches)]
+        self.gf, self.bf = np.ones(d), np.zeros(d)
+
+    def _attention(self, x, B):
+        n, d = x.shape
+        h, dk = self.h, d // self.h
+        q, k, v = np.split(x @ B["Wqkv"], 3, axis=-1)
+        q, k, v = (m.reshape(n, h, dk).transpose(1, 0, 2) for m in (q, k, v))
+        s = q @ k.transpose(0, 2, 1) / np.sqrt(dk)
+        s = np.where(np.tril(np.ones((n, n), dtype=bool)), s, -1e9)
+        z = (softmax(s) @ v).transpose(1, 0, 2).reshape(n, d)
+        return z @ B["Wo"]
+
+    def forward(self, ids):
+        ids = np.asarray(ids)
+        x = self.wte[ids] + self.wpe[np.arange(len(ids))]
+        for B in self.blocs:
+            x = x + self._attention(layer_norm(x, B["g1"], B["b1"]), B)
+            x = x + gelu(layer_norm(x, B["g2"], B["b2"]) @ B["W1"] + B["c1"]) @ B["W2"] + B["c2"]
+        return layer_norm(x, self.gf, self.bf) @ self.wte.T
+
+def generer(modele, ids, n_nouveaux, temperature=1.0, graine=0):
+    rng = np.random.default_rng(graine)
+    ids = list(ids)
+    for _ in range(n_nouveaux):
+        logits = modele.forward(ids[-modele.n_ctx:])[-1]
+        if temperature == 0:
+            suivant = int(logits.argmax())
+        else:
+            suivant = int(rng.choice(len(logits), p=softmax(logits / temperature)))
+        ids.append(suivant)
+    return ids
+
+alphabet = list("abcdefghijklmnopqrstuvwxyz ")
+m = MiniGPT(vocab=len(alphabet), d=32, h=4, n_couches=2, n_ctx=16)
+debut = [alphabet.index(c) for c in "bonjour"]
+print("".join(alphabet[i] for i in generer(m, debut, 30, temperature=0.8)))
+```
+
+### Projet · Ton mini-GPT, de l'embedding au cache KV · Le cache KV
+
+```python
+import numpy as np
+
+def softmax(x, axis=-1):
+    x = x - x.max(axis=axis, keepdims=True)
+    e = np.exp(x)
+    return e / e.sum(axis=axis, keepdims=True)
+
+def layer_norm(x, g, b, eps=1e-5):
+    m = x.mean(axis=-1, keepdims=True)
+    v = x.var(axis=-1, keepdims=True)
+    return g * (x - m) / np.sqrt(v + eps) + b
+
+def gelu(x):
+    return 0.5 * x * (1 + np.tanh(np.sqrt(2 / np.pi) * (x + 0.044715 * x ** 3)))
+
+class MiniGPT:
+    def __init__(self, vocab, d=32, h=4, n_couches=2, n_ctx=64, graine=0):
+        rng = np.random.default_rng(graine)
+        N = lambda *forme: rng.normal(0, 0.3, forme)
+        self.h, self.n_ctx = h, n_ctx
+        self.wte, self.wpe = N(vocab, d), N(n_ctx, d)
+        self.blocs = [dict(g1=np.ones(d), b1=np.zeros(d), Wqkv=N(d, 3 * d), Wo=N(d, d),
+                           g2=np.ones(d), b2=np.zeros(d), W1=N(d, 4 * d), c1=np.zeros(4 * d),
+                           W2=N(4 * d, d), c2=np.zeros(d)) for _ in range(n_couches)]
+        self.gf, self.bf = np.ones(d), np.zeros(d)
+
+    def _attention(self, x, B):
+        n, d = x.shape
+        h, dk = self.h, d // self.h
+        q, k, v = np.split(x @ B["Wqkv"], 3, axis=-1)
+        q, k, v = (m.reshape(n, h, dk).transpose(1, 0, 2) for m in (q, k, v))
+        s = q @ k.transpose(0, 2, 1) / np.sqrt(dk)
+        s = np.where(np.tril(np.ones((n, n), dtype=bool)), s, -1e9)
+        z = (softmax(s) @ v).transpose(1, 0, 2).reshape(n, d)
+        return z @ B["Wo"]
+
+    def forward(self, ids):
+        ids = np.asarray(ids)
+        x = self.wte[ids] + self.wpe[np.arange(len(ids))]
+        for B in self.blocs:
+            x = x + self._attention(layer_norm(x, B["g1"], B["b1"]), B)
+            x = x + gelu(layer_norm(x, B["g2"], B["b2"]) @ B["W1"] + B["c1"]) @ B["W2"] + B["c2"]
+        return layer_norm(x, self.gf, self.bf) @ self.wte.T
+
+class MiniGPTCache(MiniGPT):
+    def pas(self, id_token, cache):
+        if cache is None:
+            cache = {"n": 0, "kv": [None] * len(self.blocs)}
+        pos = cache["n"]
+        x = self.wte[id_token] + self.wpe[pos]                  # (d,)
+        d = x.shape[0]; h, dk = self.h, d // self.h
+        for i, B in enumerate(self.blocs):
+            q, k, v = np.split(layer_norm(x, B["g1"], B["b1"]) @ B["Wqkv"], 3)
+            q, k, v = (m.reshape(h, 1, dk) for m in (q, k, v))
+            if cache["kv"][i] is not None:
+                K0, V0 = cache["kv"][i]
+                k, v = np.concatenate([K0, k], axis=1), np.concatenate([V0, v], axis=1)
+            cache["kv"][i] = (k, v)
+            z = softmax(q @ k.transpose(0, 2, 1) / np.sqrt(dk)) @ v   # (h, 1, dk) : le nouveau token voit tout le passé
+            x = x + z.reshape(d) @ B["Wo"]
+            x = x + gelu(layer_norm(x, B["g2"], B["b2"]) @ B["W1"] + B["c1"]) @ B["W2"] + B["c2"]
+        cache["n"] = pos + 1
+        return layer_norm(x, self.gf, self.bf) @ self.wte.T, cache
+
+m = MiniGPTCache(vocab=20, d=16, h=4, n_couches=2, n_ctx=12)
+ids, cache = [3, 1, 4, 1, 5], None
+for t in ids:
+    logits, cache = m.pas(t, cache)
+print(np.allclose(logits, m.forward(ids)[-1]))
+```
+
+## FullStack AI · Adaptation et évaluation
+
+### Transfert, fine-tuning, LoRA et QLoRA · Une couche LoRA
+
+```python
+import numpy as np
+
+class LoRALineaire:
+    def __init__(self, W, r=8, alpha=16, graine=0):
+        d, k = W.shape
+        self.W, self.r, self.alpha = W, r, alpha
+        self.A = np.random.default_rng(graine).normal(0, 0.01, (d, r))
+        self.B = np.zeros((r, k))
+
+    def forward(self, x):
+        return x @ self.W + (self.alpha / self.r) * (x @ self.A @ self.B)
+
+    def n_entrainables(self):
+        return self.A.size + self.B.size
+
+    def fusionner(self):
+        return self.W + (self.alpha / self.r) * self.A @ self.B
+
+W = np.random.default_rng(1).normal(size=(512, 512))
+couche = LoRALineaire(W, r=8)
+print(f"{couche.n_entrainables()} paramètres entraînables au lieu de {W.size} ({couche.n_entrainables() / W.size:.1%})")
+```
+
+### Transfert, fine-tuning, LoRA et QLoRA · Quantifier sur 8 bits
+
+```python
+import numpy as np
+w = np.random.default_rng(0).normal(0, 0.02, 4096)
+w_aberrant = w.copy(); w_aberrant[100] = 1.5
+
+def quantifier(w):
+    echelle = np.abs(w).max() / 127
+    return np.round(w / echelle).astype(np.int8), echelle
+
+def dequantifier(q, echelle):
+    return q.astype(float) * echelle
+
+err_normale = np.abs(dequantifier(*quantifier(w)) - w).mean()
+err_aberrante = np.abs(dequantifier(*quantifier(w_aberrant)) - w_aberrant).mean()
+print(f"erreur moyenne : {err_normale:.2e} sans aberrant, {err_aberrante:.2e} avec un seul aberrant")
+```
+
+### Transfert, fine-tuning, LoRA et QLoRA · Estimer la mémoire nécessaire
+
+```python
+def memoire_go(n_params, n_entrainables, octets_base):
+    return ((n_params - n_entrainables) * octets_base + n_entrainables * 16) / 1e9
+
+complet = memoire_go(7e9, 7e9, 2)
+lora = memoire_go(7e9, 4e7, 2)
+qlora = memoire_go(7e9, 4e7, 0.5)
+print(f"complet : {complet:.0f} Go · LoRA : {lora:.1f} Go · QLoRA : {qlora:.1f} Go")
+```
+
+### L'apprentissage par renforcement appliqué · Les rendements actualisés
+
+```python
+import numpy as np
+
+def rendements(recompenses, gamma):
+    G = np.zeros(len(recompenses))
+    suite = 0.0
+    for t in reversed(range(len(recompenses))):
+        suite = recompenses[t] + gamma * suite
+        G[t] = suite
+    return G
+
+print(rendements([0, 0, 0, 1], 0.9))
+```
+
+### L'apprentissage par renforcement appliqué · Le bandit ε-glouton
+
+```python
+import numpy as np
+
+def epsilon_glouton(probas, n_tours, epsilon, graine=0):
+    rng = np.random.default_rng(graine)
+    k = len(probas)
+    Q, N, gains = np.zeros(k), np.zeros(k), 0.0
+    for _ in range(n_tours):
+        a = int(rng.integers(k)) if rng.random() < epsilon else int(Q.argmax())
+        r = float(rng.random() < probas[a])
+        N[a] += 1
+        Q[a] += (r - Q[a]) / N[a]
+        gains += r
+    return Q, gains
+
+Q, g = epsilon_glouton([0.2, 0.5, 0.75], 3000, 0.1)
+print(Q.round(2), g)
+```
+
+### L'apprentissage par renforcement appliqué · Le Q-learning sur un couloir
+
+```python
+import numpy as np
+
+def pas(s, a):
+    s2 = max(0, min(5, s + (1 if a == 1 else -1)))
+    r = 1.0 if s2 == 5 else -0.01
+    return s2, r, s2 == 5
+
+def q_learning(n_episodes=300, alpha=0.5, gamma=0.9, epsilon=0.2, graine=0):
+    rng = np.random.default_rng(graine)
+    Q = np.zeros((6, 2))
+    for _ in range(n_episodes):
+        s = 0
+        for _ in range(100):
+            if rng.random() < epsilon or Q[s, 0] == Q[s, 1]:
+                a = int(rng.integers(2))
+            else:
+                a = int(Q[s].argmax())
+            s2, r, fini = pas(s, a)
+            cible = r if fini else r + gamma * Q[s2].max()
+            Q[s, a] += alpha * (cible - Q[s, a])
+            s = s2
+            if fini:
+                break
+    return Q
+
+Q = q_learning()
+print(Q.round(3))
+print("politique :", ["←→"[a] for a in Q[:5].argmax(axis=1)])
+```
+
+### RLHF et DPO : aligner un modèle · Le modèle de Bradley-Terry
+
+```python
+import numpy as np
+
+def proba_preference(r_a, r_b):
+    return 1 / (1 + np.exp(-(r_a - r_b)))
+
+def perte_recompense(r_choisies, r_rejetees):
+    return np.mean(np.logaddexp(0, -(np.asarray(r_choisies) - np.asarray(r_rejetees))))
+
+print(proba_preference(2.0, 1.0), perte_recompense([2.0, 0.5], [1.0, 1.5]))
+```
+
+### RLHF et DPO : aligner un modèle · La log-probabilité d'une réponse
+
+```python
+import numpy as np
+
+def logprob_reponse(logits, ids):
+    z = logits - logits.max(axis=1, keepdims=True)
+    log_p = z - np.log(np.exp(z).sum(axis=1, keepdims=True))
+    return float(log_p[np.arange(len(ids)), ids].sum())
+
+logits = np.array([[2.0, 0.5, -1.0], [0.0, 3.0, 0.0]])
+print(logprob_reponse(logits, np.array([0, 1])))
+```
+
+### RLHF et DPO : aligner un modèle · La perte DPO
+
+```python
+import numpy as np
+
+def perte_dpo(lp_c, lp_r, lp_ref_c, lp_ref_r, beta=0.1):
+    marge = beta * ((np.asarray(lp_c) - lp_ref_c) - (np.asarray(lp_r) - lp_ref_r))
+    return float(np.mean(np.logaddexp(0, -marge)))
+
+ref_c, ref_r = np.array([-12.0, -30.0]), np.array([-11.0, -28.0])
+print("au départ (modèle = référence) :", perte_dpo(ref_c, ref_r, ref_c, ref_r))
+print("après entraînement :", perte_dpo(ref_c + 5, ref_r - 5, ref_c, ref_r))
 ```

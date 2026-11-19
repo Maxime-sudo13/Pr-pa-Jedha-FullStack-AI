@@ -4,9 +4,9 @@ J'ai créé une plateforme d'apprentissage pour me préparer à la formation Ful
 
 Elle suit les modules officiels des programmes **Essentials AI**, **FullStack AI** et **Lead AI** de Jedha, avec un plan de 11 semaines à 20 h et plus.
 
-- **55 leçons** avec du code exécutable dans le navigateur et **26 animations interactives**
-- **128 exercices** corrigés automatiquement (Python, pandas, SQL, machine learning, deep learning, LLM, agents, RAG)
-- **8 projets** pour le portfolio et **11 quiz**, dont un de préparation à l'AWS Cloud Practitioner
+- **64 leçons** avec du code exécutable dans le navigateur et **33 animations interactives**
+- **159 exercices** corrigés automatiquement (Python, pandas, SQL, machine learning, deep learning, Transformers, CLIP, diffusion, LoRA, RL, LLM, agents, RAG)
+- **9 projets** pour le portfolio, dont un mini-GPT avec cache KV, et **13 quiz**, dont un de préparation à l'AWS Cloud Practitioner
 - de vrais appels à un LLM depuis Python, et un tuteur IA dans chaque leçon
 - la carte complète des 3 programmes : ce qui est préparé, ce qui arrive
 
